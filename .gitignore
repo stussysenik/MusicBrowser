@@ -1,0 +1,19 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+
+# FlowDeck sessions
+.flowdeck/
+
+# macOS
+.DS_Store
+
+# Swift Package Manager
+.build/
+Packages/
+
+# Temporary files
+*.swp
+*~
