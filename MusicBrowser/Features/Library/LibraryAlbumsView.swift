@@ -205,3 +205,11 @@ struct LibraryAlbumsView: View {
         }
     }
 }
+
+#Preview("Library Albums") {
+    PreviewHost {
+        NavigationStack {
+            LibraryAlbumsView()
+        }
+    }
+}

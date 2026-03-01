@@ -249,3 +249,9 @@ struct NowPlayingView: View {
         }
     }
 }
+
+#Preview("Now Playing") {
+    PreviewHost {
+        NowPlayingView()
+    }
+}

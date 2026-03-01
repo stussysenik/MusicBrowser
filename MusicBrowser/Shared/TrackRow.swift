@@ -44,3 +44,14 @@ struct TrackRow: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview("Track Row") {
+    TrackRow(
+        title: "Sample Song",
+        artistName: "Sample Artist",
+        artwork: nil,
+        duration: 198,
+        number: 1
+    ) {}
+    .padding()
+}

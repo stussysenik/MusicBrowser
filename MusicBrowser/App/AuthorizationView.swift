@@ -33,3 +33,8 @@ struct AuthorizationView: View {
         #endif
     }
 }
+#Preview("Authorization") {
+    AuthorizationView()
+        .padding()
+}
+

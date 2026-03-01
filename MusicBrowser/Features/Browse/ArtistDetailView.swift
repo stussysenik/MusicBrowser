@@ -128,3 +128,17 @@ struct ArtistDetailView: View {
         }
     }
 }
+
+#Preview("Artist Detail") {
+    PreviewHost {
+        PreviewLibraryItemContainer(
+            title: "Artist Preview",
+            symbol: "person.2",
+            load: { await PreviewLibraryLoader.firstArtist() }
+        ) { artist in
+            NavigationStack {
+                ArtistDetailView(artist: artist)
+            }
+        }
+    }
+}

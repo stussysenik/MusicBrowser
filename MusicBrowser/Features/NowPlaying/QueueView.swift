@@ -81,3 +81,9 @@ struct QueueView: View {
         }
     }
 }
+
+#Preview("Queue") {
+    PreviewHost {
+        QueueView()
+    }
+}

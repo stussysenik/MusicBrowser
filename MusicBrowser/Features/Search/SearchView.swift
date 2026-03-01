@@ -156,3 +156,11 @@ struct SearchView: View {
         }
     }
 }
+
+#Preview("Search") {
+    PreviewHost {
+        NavigationStack {
+            SearchView()
+        }
+    }
+}

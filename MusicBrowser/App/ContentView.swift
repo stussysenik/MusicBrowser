@@ -51,3 +51,9 @@ struct ContentView: View {
         }
     }
 }
+
+#Preview("Content Root") {
+    PreviewHost {
+        ContentView()
+    }
+}

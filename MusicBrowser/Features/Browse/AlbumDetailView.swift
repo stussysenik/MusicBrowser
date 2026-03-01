@@ -125,3 +125,17 @@ struct AlbumDetailView: View {
         }
     }
 }
+
+#Preview("Album Detail") {
+    PreviewHost {
+        PreviewLibraryItemContainer(
+            title: "Album Preview",
+            symbol: "square.stack",
+            load: { await PreviewLibraryLoader.firstAlbum() }
+        ) { album in
+            NavigationStack {
+                AlbumDetailView(album: album)
+            }
+        }
+    }
+}

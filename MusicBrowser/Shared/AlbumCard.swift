@@ -45,3 +45,13 @@ struct AlbumCard: View {
         .frame(width: size)
     }
 }
+
+#Preview("Album Card") {
+    AlbumCard(
+        title: "Sample Album",
+        subtitle: "Sample Artist",
+        artwork: nil,
+        size: 160
+    )
+    .padding()
+}

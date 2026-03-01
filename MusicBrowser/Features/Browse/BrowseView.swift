@@ -140,3 +140,11 @@ struct BrowseView: View {
         hasLoaded = true
     }
 }
+
+#Preview("Browse") {
+    PreviewHost {
+        NavigationStack {
+            BrowseView()
+        }
+    }
+}

@@ -149,3 +149,11 @@ struct LibraryArtistsView: View {
         }
     }
 }
+
+#Preview("Library Artists") {
+    PreviewHost {
+        NavigationStack {
+            LibraryArtistsView()
+        }
+    }
+}

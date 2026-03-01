@@ -1,0 +1,79 @@
+#if DEBUG
+import SwiftUI
+import SwiftData
+import MusicKit
+
+/// Shared preview wrapper that injects app services and an in-memory SwiftData store.
+struct PreviewHost<Content: View>: View {
+    private let musicService: MusicService
+    private let playerService: PlayerService
+    private let analysisService: AnalysisService
+    private let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        let musicService = MusicService()
+        musicService.isAuthorized = true
+        self.musicService = musicService
+        self.playerService = PlayerService()
+        self.analysisService = AnalysisService()
+        self.content = content()
+    }
+
+    var body: some View {
+        content
+            .environment(musicService)
+            .environment(playerService)
+            .environment(analysisService)
+            .modelContainer(for: SongAnalysis.self, inMemory: true)
+    }
+}
+
+enum PreviewLibraryLoader {
+    static func firstSong() async -> Song? {
+        var request = MusicLibraryRequest<Song>()
+        request.limit = 1
+        return try? await request.response().items.first
+    }
+
+    static func firstAlbum() async -> Album? {
+        var request = MusicLibraryRequest<Album>()
+        request.limit = 1
+        return try? await request.response().items.first
+    }
+
+    static func firstArtist() async -> Artist? {
+        var request = MusicLibraryRequest<Artist>()
+        request.limit = 1
+        return try? await request.response().items.first
+    }
+
+    static func firstPlaylist() async -> Playlist? {
+        var request = MusicLibraryRequest<Playlist>()
+        request.limit = 1
+        return try? await request.response().items.first
+    }
+}
+
+struct PreviewLibraryItemContainer<Item, Content: View>: View {
+    let title: String
+    let symbol: String
+    let load: () async -> Item?
+    let content: (Item) -> Content
+    @State private var item: Item?
+
+    var body: some View {
+        Group {
+            if let item {
+                content(item)
+            } else {
+                ContentUnavailableView(title, systemImage: symbol)
+            }
+        }
+        .task {
+            if item == nil {
+                item = await load()
+            }
+        }
+    }
+}
+#endif

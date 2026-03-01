@@ -38,3 +38,11 @@ struct LibraryView: View {
         .navigationDestination(for: Artist.self) { ArtistDetailView(artist: $0) }
     }
 }
+
+#Preview("Library") {
+    PreviewHost {
+        NavigationStack {
+            LibraryView()
+        }
+    }
+}

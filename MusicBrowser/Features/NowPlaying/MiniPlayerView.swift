@@ -63,3 +63,10 @@ struct MiniPlayerView: View {
         .buttonStyle(.plain)
     }
 }
+
+#Preview("Mini Player") {
+    PreviewHost {
+        MiniPlayerView(showNowPlaying: .constant(false))
+            .padding()
+    }
+}

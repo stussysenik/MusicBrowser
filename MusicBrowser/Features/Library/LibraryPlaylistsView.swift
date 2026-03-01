@@ -142,3 +142,11 @@ struct LibraryPlaylistsView: View {
         }
     }
 }
+
+#Preview("Library Playlists") {
+    PreviewHost {
+        NavigationStack {
+            LibraryPlaylistsView()
+        }
+    }
+}

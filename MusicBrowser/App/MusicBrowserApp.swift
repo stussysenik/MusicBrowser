@@ -25,3 +25,9 @@ struct MusicBrowserApp: App {
         #endif
     }
 }
+
+#Preview("App Root") {
+    PreviewHost {
+        ContentView()
+    }
+}

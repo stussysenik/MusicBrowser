@@ -21,3 +21,8 @@ struct ArtworkView: View {
         }
     }
 }
+
+#Preview("Artwork Placeholder") {
+    ArtworkView(artwork: nil, size: 120)
+        .padding()
+}

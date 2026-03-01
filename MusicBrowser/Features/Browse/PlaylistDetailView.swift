@@ -115,3 +115,17 @@ struct PlaylistDetailView: View {
         }
     }
 }
+
+#Preview("Playlist Detail") {
+    PreviewHost {
+        PreviewLibraryItemContainer(
+            title: "Playlist Preview",
+            symbol: "music.note.list",
+            load: { await PreviewLibraryLoader.firstPlaylist() }
+        ) { playlist in
+            NavigationStack {
+                PlaylistDetailView(playlist: playlist)
+            }
+        }
+    }
+}

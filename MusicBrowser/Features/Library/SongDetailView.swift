@@ -240,15 +240,31 @@ struct SongDetailView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Link(destination: URL(string: "music://music.apple.com/song/\(song.id.rawValue)")!) {
-                    Label("Open in Apple Music", systemImage: "arrow.up.right")
-                        .font(.caption)
+                if let lyricsURL = URL(string: "music://music.apple.com/song/\(song.id.rawValue)") {
+                    Link(destination: lyricsURL) {
+                        Label("Open in Apple Music", systemImage: "arrow.up.right")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
             }
             .padding(12)
             .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+}
+
+#Preview("Song Detail") {
+    PreviewHost {
+        PreviewLibraryItemContainer(
+            title: "Song Preview",
+            symbol: "music.note",
+            load: { await PreviewLibraryLoader.firstSong() }
+        ) { song in
+            NavigationStack {
+                SongDetailView(song: song)
+            }
         }
     }
 }

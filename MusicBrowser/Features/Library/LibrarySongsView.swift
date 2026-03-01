@@ -316,3 +316,11 @@ struct LibrarySongsView: View {
         }
     }
 }
+
+#Preview("Library Songs") {
+    PreviewHost {
+        NavigationStack {
+            LibrarySongsView()
+        }
+    }
+}
