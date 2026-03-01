@@ -8,6 +8,7 @@ struct NowPlayingView: View {
     @State private var isSeeking = false
     @State private var seekTime: TimeInterval = 0
     @State private var showQueue = false
+    @State private var showLyrics = false
 
     var body: some View {
         NavigationStack {
@@ -33,14 +34,24 @@ struct NowPlayingView: View {
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    Button { showQueue = true } label: {
-                        Image(systemName: "list.bullet")
+                    HStack(spacing: 12) {
+                        if player.hasLyrics {
+                            Button { showLyrics = true } label: {
+                                Image(systemName: "quote.bubble")
+                            }
+                        }
+                        Button { showQueue = true } label: {
+                            Image(systemName: "list.bullet")
+                        }
                     }
                 }
             }
         }
         .sheet(isPresented: $showQueue) {
             QueueView()
+        }
+        .sheet(isPresented: $showLyrics) {
+            lyricsSheet
         }
         #if os(macOS)
         .frame(minWidth: 400, minHeight: 560)
@@ -174,6 +185,67 @@ struct NowPlayingView: View {
         case .one: return "repeat.1"
         case .all: return "repeat"
         default: return "repeat"
+        }
+    }
+
+    // MARK: - Lyrics Sheet
+
+    private var lyricsSheet: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                if player.hasLyrics {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            Text("Lyrics")
+                                .font(.largeTitle.bold())
+                                .padding(.horizontal)
+
+                            Text(player.currentTitle ?? "")
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal)
+
+                            // MusicKit doesn't expose lyrics content via public API
+                            // Show availability indicator + prompt to use Apple Music
+                            VStack(spacing: 12) {
+                                Image(systemName: "text.quote")
+                                    .font(.system(size: 48))
+                                    .foregroundStyle(.tertiary)
+
+                                Text("Lyrics available in Apple Music")
+                                    .font(.headline)
+
+                                Text("Open this song in Apple Music to view synced lyrics.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+
+                                if let songID = player.currentSongID {
+                                    Link(destination: URL(string: "music://music.apple.com/song/\(songID.rawValue)")!) {
+                                        Label("Open in Apple Music", systemImage: "arrow.up.right")
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .padding(.top, 8)
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, 40)
+                        }
+                        .padding(.vertical)
+                    }
+                } else {
+                    ContentUnavailableView(
+                        "No Lyrics",
+                        systemImage: "text.quote",
+                        description: Text("Lyrics are not available for this song.")
+                    )
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { showLyrics = false }
+                }
+            }
         }
     }
 }

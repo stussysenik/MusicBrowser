@@ -17,22 +17,18 @@ final class PlayerService {
     var currentTitle: String?
     var currentArtist: String?
     var currentArtwork: Artwork?
+    var currentSongID: MusicItemID?
+    var hasLyrics = false
     var shuffleIsOn = false
     var repeatMode: MusicKit.MusicPlayer.RepeatMode = .none
 
-    // MARK: - Queue State
+    // MARK: - Queue State (cached for O(1))
 
     var queueEntries: [ApplicationMusicPlayer.Queue.Entry] = []
     var currentQueueEntry: ApplicationMusicPlayer.Queue.Entry?
+    private(set) var upcomingCache: [ApplicationMusicPlayer.Queue.Entry] = []
 
-    var upcomingEntries: [ApplicationMusicPlayer.Queue.Entry] {
-        guard let current = currentQueueEntry else { return queueEntries }
-        let entries = Array(musicPlayer.queue.entries)
-        guard let idx = entries.firstIndex(where: { $0.id == current.id }) else { return [] }
-        let nextIdx = entries.index(after: idx)
-        guard nextIdx < entries.endIndex else { return [] }
-        return Array(entries[nextIdx...])
-    }
+    var upcomingEntries: [ApplicationMusicPlayer.Queue.Entry] { upcomingCache }
 
     // MARK: - Init
 
@@ -49,10 +45,11 @@ final class PlayerService {
             }
             .store(in: &cancellables)
 
+        // 100ms timer for smooth progress bar
         timerTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 self?.syncPlaybackTime()
-                try? await Task.sleep(for: .milliseconds(400))
+                try? await Task.sleep(for: .milliseconds(100))
             }
         }
     }
@@ -73,14 +70,56 @@ final class PlayerService {
         currentArtist = entry?.subtitle
         currentArtwork = entry?.artwork
         currentQueueEntry = entry
-        queueEntries = Array(musicPlayer.queue.entries)
+
+        // Read duration directly from the current entry's item
+        if let item = entry?.item {
+            switch item {
+            case .song(let song):
+                currentDuration = song.duration ?? 0
+                currentSongID = song.id
+                hasLyrics = song.hasLyrics
+            default:
+                // Fallback to MPNowPlayingInfoCenter
+                readDurationFromNowPlaying()
+                currentSongID = nil
+                hasLyrics = false
+            }
+        }
+
+        // Cache queue and upcoming in one pass
+        let entries = Array(musicPlayer.queue.entries)
+        queueEntries = entries
+        rebuildUpcoming(entries: entries, current: entry)
+    }
+
+    private func rebuildUpcoming(entries: [ApplicationMusicPlayer.Queue.Entry], current: ApplicationMusicPlayer.Queue.Entry?) {
+        guard let current else { upcomingCache = entries; return }
+        guard let idx = entries.firstIndex(where: { $0.id == current.id }) else {
+            upcomingCache = []
+            return
+        }
+        let nextIdx = entries.index(after: idx)
+        guard nextIdx < entries.endIndex else {
+            upcomingCache = []
+            return
+        }
+        upcomingCache = Array(entries[nextIdx...])
     }
 
     private func syncPlaybackTime() {
         guard isPlaying || currentTitle != nil else { return }
         playbackTime = musicPlayer.playbackTime
+
+        // If duration wasn't set from queue entry, try MPNowPlayingInfoCenter
+        if currentDuration <= 0 {
+            readDurationFromNowPlaying()
+        }
+    }
+
+    private func readDurationFromNowPlaying() {
         if let info = MPNowPlayingInfoCenter.default().nowPlayingInfo,
-           let dur = info[MPMediaItemPropertyPlaybackDuration] as? TimeInterval {
+           let dur = info[MPMediaItemPropertyPlaybackDuration] as? TimeInterval,
+           dur > 0 {
             currentDuration = dur
         }
     }
