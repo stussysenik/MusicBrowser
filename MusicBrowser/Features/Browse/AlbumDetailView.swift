@@ -22,6 +22,7 @@ struct AlbumDetailView: View {
             .padding()
         }
         .navigationTitle(album.title)
+        .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -88,15 +89,17 @@ struct AlbumDetailView: View {
         } else if let tracks, !tracks.isEmpty {
             LazyVStack(spacing: 0) {
                 ForEach(Array(tracks.enumerated()), id: \.element.id) { idx, track in
-                    TrackRow(
-                        title: track.title,
-                        artistName: track.artistName,
-                        artwork: nil,
-                        duration: track.duration,
-                        number: idx + 1
-                    ) {
-                        Task {
-                            try? await player.playTracks(tracks, startingAt: idx)
+                    HStack(spacing: 0) {
+                        TrackRow(
+                            title: track.title,
+                            artistName: track.artistName,
+                            artwork: nil,
+                            duration: track.duration,
+                            number: idx + 1
+                        ) {
+                            Task {
+                                try? await player.playTracks(tracks, startingAt: idx)
+                            }
                         }
                     }
                     .padding(.vertical, 4)

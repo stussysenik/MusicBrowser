@@ -21,6 +21,7 @@ struct ArtistDetailView: View {
             .padding()
         }
         .navigationTitle(artist.name)
+        .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -46,14 +47,45 @@ struct ArtistDetailView: View {
 
                 LazyVStack(spacing: 0) {
                     ForEach(Array(songs.prefix(10).enumerated()), id: \.element.id) { idx, song in
-                        TrackRow(
-                            title: song.title,
-                            artistName: song.artistName,
-                            artwork: song.artwork,
-                            duration: song.duration,
-                            number: idx + 1
-                        ) {
-                            Task { try? await player.playSong(song) }
+                        HStack(spacing: 0) {
+                            NavigationLink(value: song) {
+                                HStack(spacing: 12) {
+                                    Text("\(idx + 1)")
+                                        .font(.callout.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 28, alignment: .trailing)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(song.title)
+                                            .font(.body)
+                                            .lineLimit(1)
+                                        Text(song.artistName)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+
+                                    Spacer()
+
+                                    if let duration = song.duration {
+                                        Text(formatDuration(duration))
+                                            .font(.caption.monospacedDigit())
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                Task { try? await player.playSong(song) }
+                            } label: {
+                                Image(systemName: "play.circle.fill")
+                                    .font(.title3)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.leading, 8)
                         }
                         .padding(.vertical, 4)
 

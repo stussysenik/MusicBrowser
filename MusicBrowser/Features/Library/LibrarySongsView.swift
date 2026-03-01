@@ -105,29 +105,55 @@ struct LibrarySongsView: View {
 
     @ViewBuilder
     private func songRow(_ song: Song, at idx: Int) -> some View {
-        HStack(spacing: 0) {
-            TrackRow(
-                title: song.title,
-                artistName: song.artistName,
-                artwork: song.artwork,
-                duration: song.duration
-            ) {
-                Task { try? await player.playSongs(displayCache, startingAt: idx) }
-            }
+        NavigationLink(value: song) {
+            HStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    ArtworkView(artwork: song.artwork, size: 44)
 
-            if sortOption == .playCount, let count = song.playCount {
-                Text("\(count)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .padding(.trailing, 4)
-            }
-            if sortOption == .bpm, let bpm = analysisService.bpm(for: song) {
-                Text("\(Int(bpm))")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.orange)
-                    .padding(.trailing, 4)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(song.title)
+                            .font(.body)
+                            .lineLimit(1)
+                        Text(song.artistName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    if let duration = song.duration {
+                        Text(formatDuration(duration))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+
+                if sortOption == .playCount, let count = song.playCount {
+                    Text("\(count)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.trailing, 4)
+                }
+                if sortOption == .bpm, let bpm = analysisService.bpm(for: song) {
+                    Text("\(Int(bpm))")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.orange)
+                        .padding(.trailing, 4)
+                }
+
+                Button {
+                    Task { try? await player.playSongs(displayCache, startingAt: idx) }
+                } label: {
+                    Image(systemName: "play.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .padding(.leading, 8)
             }
         }
+        .buttonStyle(.plain)
         .padding(.horizontal)
         .padding(.vertical, 4)
     }

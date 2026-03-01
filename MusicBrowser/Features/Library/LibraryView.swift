@@ -32,6 +32,7 @@ struct LibraryView: View {
             }
         }
         .navigationTitle("Library")
+        .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
         .navigationDestination(for: Album.self) { AlbumDetailView(album: $0) }
         .navigationDestination(for: Playlist.self) { PlaylistDetailView(playlist: $0) }
         .navigationDestination(for: Artist.self) { ArtistDetailView(artist: $0) }

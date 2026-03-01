@@ -22,6 +22,7 @@ struct PlaylistDetailView: View {
             .padding()
         }
         .navigationTitle(playlist.name)
+        .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
