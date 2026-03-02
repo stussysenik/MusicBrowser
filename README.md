@@ -1,4 +1,17 @@
+<div align="center">
+
 # MusicBrowser
+
+### Marvis-inspired music browser for iOS & macOS
+
+![Swift](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)
+![SwiftUI](https://img.shields.io/badge/SwiftUI-Framework-007AFF?style=flat-square&logo=apple)
+![MusicKit](https://img.shields.io/badge/MusicKit-API-FC3C44?style=flat-square&logo=apple-music&logoColor=white)
+![SwiftData](https://img.shields.io/badge/SwiftData-Persistence-34C759?style=flat-square)
+
+</div>
+
+---
 
 MusicBrowser is a SwiftUI + MusicKit app for browsing Apple Music library content, searching catalog items, and controlling playback with queue/now-playing views.
 
