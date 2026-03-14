@@ -1,13 +1,20 @@
 import SwiftUI
+import SwiftData
 import MusicKit
 
 struct SongDetailView: View {
     let song: Song
     @Environment(PlayerService.self) private var player
     @Environment(AnalysisService.self) private var analysisService
+    @Environment(AnnotationService.self) private var annotationService
+    @Environment(\.modelContext) private var modelContext
 
     @State private var isSeeking = false
     @State private var seekTime: TimeInterval = 0
+    @State private var annotation: SongAnnotation?
+    @State private var newTag = ""
+    @State private var saveTask: Task<Void, Never>?
+    @State private var showSaveConfirmation = false
 
     private var isCurrentSong: Bool {
         player.currentSongID == song.id
@@ -24,6 +31,7 @@ struct SongDetailView: View {
                     playbackControls
                 }
                 metadataGrid
+                annotationSection
                 lyricsIndicator
             }
             .padding()
@@ -32,6 +40,9 @@ struct SongDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .onAppear {
+            loadOrCreateAnnotation()
+        }
     }
 
     // MARK: - Artwork
@@ -226,6 +237,131 @@ struct SongDetailView: View {
         }
         .padding(10)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    // MARK: - Annotations
+
+    private var annotationSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Annotations")
+                .font(.headline)
+
+            // Rating
+            HStack(spacing: 4) {
+                Text("Rating")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                ForEach(1...5, id: \.self) { star in
+                    Button {
+                        let newRating = (annotation?.rating == star) ? 0 : star
+                        annotation?.rating = newRating
+                        debouncedSave()
+                    } label: {
+                        Image(systemName: (annotation?.rating ?? 0) >= star ? "star.fill" : "star")
+                            .foregroundStyle((annotation?.rating ?? 0) >= star ? .yellow : .secondary)
+                            .font(.title3)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .animation(.snappy(duration: 0.2), value: annotation?.rating)
+
+            // Tags
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Tags")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                if let tags = annotation?.tags, !tags.isEmpty {
+                    FlowLayout(spacing: 6) {
+                        ForEach(tags, id: \.self) { tag in
+                            HStack(spacing: 4) {
+                                Text(tag)
+                                    .font(.caption)
+                                Button {
+                                    annotation?.tags.removeAll { $0 == tag }
+                                    debouncedSave()
+                                } label: {
+                                    Image(systemName: "minus.circle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.secondary)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .frame(minHeight: 34)
+                            .background(.quaternary, in: Capsule())
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .animation(.snappy(duration: 0.2), value: tags)
+                }
+
+                HStack {
+                    TextField("Add tag", text: $newTag)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.caption)
+                        .onSubmit { addTag() }
+                    Button("Add") { addTag() }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(newTag.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+
+            // Notes
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Notes")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                TextEditor(text: Binding(
+                    get: { annotation?.notes ?? "" },
+                    set: { newValue in
+                        annotation?.notes = newValue
+                        debouncedSave()
+                    }
+                ))
+                .frame(minHeight: 80)
+                .font(.body)
+                .scrollContentBackground(.hidden)
+                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .padding(12)
+        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 12))
+        .sensoryFeedback(.success, trigger: showSaveConfirmation)
+    }
+
+    private func loadOrCreateAnnotation() {
+        if let existing = annotationService.annotation(for: song.id.rawValue, in: modelContext) {
+            annotation = existing
+        } else {
+            let new = SongAnnotation(songID: song.id.rawValue, title: song.title, artistName: song.artistName)
+            modelContext.insert(new)
+            annotation = new
+        }
+    }
+
+    private func addTag() {
+        let tag = newTag.trimmingCharacters(in: .whitespaces)
+        guard !tag.isEmpty else { return }
+        if annotation?.tags.contains(tag) == false {
+            annotation?.tags.append(tag)
+            debouncedSave()
+        }
+        newTag = ""
+    }
+
+    private func debouncedSave() {
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, let annotation else { return }
+            annotationService.saveAnnotation(annotation, in: modelContext)
+            showSaveConfirmation.toggle()
+        }
     }
 
     // MARK: - Lyrics Indicator

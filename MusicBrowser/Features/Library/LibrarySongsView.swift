@@ -2,19 +2,24 @@ import SwiftUI
 import MusicKit
 
 struct LibrarySongsView: View {
+    let isActive: Bool
+
     @Environment(MusicService.self) private var musicService
-    @Environment(PlayerService.self) private var player
     @Environment(AnalysisService.self) private var analysisService
+    @Environment(PlayerService.self) private var player
 
     @State private var songs: [Song] = []
     @State private var isLoading = true
     @State private var hasMore = true
+    @State private var loadError: Error?
+    @State private var loadTask: Task<Void, Never>?
     @State private var sortOption: SongSortOption = .title
     @State private var sortDirection: SortDirection = .ascending
     @State private var filterArtist: String = ""
     @State private var filterGenre: String = ""
     @State private var bpmMin: Double = 0
     @State private var bpmMax: Double = 300
+    @State private var addToPlaylistSong: Song?
 
     // MARK: - Pre-computed indexes (O(1) lookup)
 
@@ -22,11 +27,32 @@ struct LibrarySongsView: View {
     @State private var genreIndex: [String] = []
     @State private var displayCache: [Song] = []
 
+    // Cached derived values (rebuilt explicitly instead of per-render)
+    @State private var filteredSongsCache: [Song] = []
+    @State private var availableLettersCache: [String] = []
+
     var body: some View {
         Group {
             if isLoading && songs.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 0) {
+                    ForEach(0..<8, id: \.self) { _ in
+                        SkeletonTrackRow()
+                        Divider().padding(.leading, 68)
+                    }
+                    Spacer()
+                }
+            } else if let loadError, songs.isEmpty {
+                ContentUnavailableView {
+                    Label("Unable to Load Songs", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(loadError.localizedDescription)
+                } actions: {
+                    Button("Retry") {
+                        loadTask?.cancel()
+                        loadTask = Task { await loadSongs() }
+                    }
+                    .buttonStyle(.bordered)
+                }
             } else if songs.isEmpty {
                 ContentUnavailableView("No Songs", systemImage: "music.note")
             } else {
@@ -34,69 +60,90 @@ struct LibrarySongsView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Menu {
-                    sortSection
-                    directionSection
-                    filterSection
-                } label: {
-                    Label("View Options", systemImage: "arrow.up.arrow.down")
+            if isActive {
+                ToolbarItem(placement: .automatic) {
+                    Menu {
+                        sortSection
+                        directionSection
+                        filterSection
+                    } label: {
+                        Label("View Options", systemImage: "line.3.horizontal.decrease")
+                    }
                 }
             }
         }
         .task { await loadSongs() }
         .onChange(of: sortOption) { _, _ in
             if sortOption.isAPISort {
-                Task { await reloadSongs() }
+                loadTask?.cancel()
+                loadTask = Task { await reloadSongs() }
             } else {
                 rebuildDisplayCache()
             }
         }
         .onChange(of: sortDirection) { _, _ in
             if sortOption.isAPISort {
-                Task { await reloadSongs() }
+                loadTask?.cancel()
+                loadTask = Task { await reloadSongs() }
             } else {
                 rebuildDisplayCache()
             }
         }
         .onChange(of: filterArtist) { _, _ in rebuildDisplayCache() }
         .onChange(of: filterGenre) { _, _ in rebuildDisplayCache() }
+        .animation(.snappy(duration: 0.2), value: filteredSongsCache.count)
+        .sheet(item: $addToPlaylistSong) { song in
+            AddToPlaylistSheet(song: song)
+        }
     }
 
     // MARK: - Song List
 
     private var songList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                HStack {
-                    Text("\(displayCache.count) songs")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    if sortOption == .playCount || sortOption == .lastPlayed {
-                        Text(sortOption.rawValue)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 4)
+        ScrollViewReader { proxy in
+            HStack(spacing: 0) {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        HStack {
+                            Text("\(filteredSongs.count) songs")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                        .id("songs-top")
 
-                ForEach(Array(displayCache.enumerated()), id: \.element.id) { idx, song in
-                    songRow(song, at: idx)
-                        .task {
-                            if idx == displayCache.count - 5 { await loadMore() }
+                        ForEach(Array(filteredSongs.enumerated()), id: \.element.id) { idx, song in
+                            songRow(song)
+                                .id(song.id.rawValue)
+                                .task {
+                                    if idx == filteredSongs.count - 5 { await loadMore() }
+                                }
+
+                            if idx < filteredSongs.count - 1 {
+                                Divider().padding(.leading, 68)
+                            }
                         }
 
-                    if idx < displayCache.count - 1 {
-                        Divider().padding(.leading, 68)
+                        if hasMore {
+                            ProgressView()
+                                .padding()
+                                .symbolEffect(.pulse, options: .repeating)
+                        }
                     }
                 }
 
-                if hasMore {
-                    ProgressView()
-                        .padding()
-                }
+                SectionIndexRail(
+                    availableLetters: Set(availableLetters),
+                    onScrollTo: { letter in
+                        if let firstMatch = filteredSongs.first(where: { firstLetter(for: $0.title) == letter }) {
+                            withAnimation(.snappy(duration: 0.2)) {
+                                proxy.scrollTo(firstMatch.id.rawValue, anchor: .top)
+                            }
+                        }
+                    }
+                )
             }
         }
     }
@@ -104,7 +151,7 @@ struct LibrarySongsView: View {
     // MARK: - Song Row
 
     @ViewBuilder
-    private func songRow(_ song: Song, at idx: Int) -> some View {
+    private func songRow(_ song: Song) -> some View {
         NavigationLink(value: song) {
             HStack(spacing: 0) {
                 HStack(spacing: 12) {
@@ -141,21 +188,34 @@ struct LibrarySongsView: View {
                         .foregroundStyle(.orange)
                         .padding(.trailing, 4)
                 }
-
-                Button {
-                    Task { try? await player.playSongs(displayCache, startingAt: idx) }
-                } label: {
-                    Image(systemName: "play.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .padding(.leading, 8)
             }
         }
         .buttonStyle(.plain)
         .padding(.horizontal)
         .padding(.vertical, 4)
+        .contextMenu {
+            Button {
+                Task { try? await player.playSong(song) }
+            } label: {
+                Label("Play", systemImage: "play")
+            }
+            Button {
+                Task { try? await player.playNext(song) }
+            } label: {
+                Label("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward")
+            }
+            Button {
+                Task { try? await player.addToQueue(song) }
+            } label: {
+                Label("Add to Queue", systemImage: "text.badge.plus")
+            }
+            Divider()
+            Button {
+                addToPlaylistSong = song
+            } label: {
+                Label("Add to Playlist", systemImage: "music.note.list")
+            }
+        }
     }
 
     // MARK: - Menu Sections
@@ -190,7 +250,7 @@ struct LibrarySongsView: View {
         if !genreIndex.isEmpty {
             Section("Genre") {
                 Button("All Genres") { filterGenre = "" }
-                ForEach(genreIndex.prefix(15), id: \.self) { genre in
+                ForEach(genreIndex, id: \.self) { genre in
                     Button {
                         filterGenre = genre
                     } label: {
@@ -270,6 +330,19 @@ struct LibrarySongsView: View {
         }
 
         displayCache = result
+        rebuildFilteredCache()
+    }
+
+    private func rebuildFilteredCache() {
+        availableLettersCache = displayCache.availableLetters
+        filteredSongsCache = displayCache
+    }
+
+    private var filteredSongs: [Song] { filteredSongsCache }
+    private var availableLetters: [String] { availableLettersCache }
+
+    private func firstLetter(for text: String) -> String {
+        StringUtils.firstLetter(of: text)
     }
 
     // MARK: - Data Loading
@@ -277,13 +350,17 @@ struct LibrarySongsView: View {
     private func loadSongs() async {
         do {
             let response = try await musicService.librarySongs(sort: sortOption, direction: sortDirection)
+            guard !Task.isCancelled else { return }
             songs = Array(response.items)
             hasMore = response.items.count == 100
             isLoading = false
+            loadError = nil
             rebuildIndexes()
             rebuildDisplayCache()
             await analysisService.analyzeBatch(Array(songs.prefix(50)))
         } catch {
+            guard !Task.isCancelled else { return }
+            loadError = error
             isLoading = false
         }
     }
@@ -304,6 +381,7 @@ struct LibrarySongsView: View {
                 sort: sortOption,
                 direction: sortDirection
             )
+            guard !Task.isCancelled else { return }
             let newSongs = Array(response.items)
             songs.append(contentsOf: newSongs)
             hasMore = response.items.count == 100
@@ -312,6 +390,7 @@ struct LibrarySongsView: View {
             rebuildDisplayCache()
             await analysisService.analyzeBatch(newSongs)
         } catch {
+            guard !Task.isCancelled else { return }
             isLoading = false
         }
     }
@@ -320,7 +399,7 @@ struct LibrarySongsView: View {
 #Preview("Library Songs") {
     PreviewHost {
         NavigationStack {
-            LibrarySongsView()
+            LibrarySongsView(isActive: true)
         }
     }
 }

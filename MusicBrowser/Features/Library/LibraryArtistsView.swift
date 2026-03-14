@@ -2,11 +2,15 @@ import SwiftUI
 import MusicKit
 
 struct LibraryArtistsView: View {
+    let isActive: Bool
+
     @Environment(MusicService.self) private var musicService
 
     @State private var artists: [Artist] = []
     @State private var isLoading = true
     @State private var hasMore = true
+    @State private var loadError: Error?
+    @State private var loadTask: Task<Void, Never>?
     @State private var sortDirection: SortDirection = .ascending
 
     // Pre-computed section cache
@@ -29,8 +33,25 @@ struct LibraryArtistsView: View {
     var body: some View {
         Group {
             if isLoading && artists.isEmpty {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 0) {
+                    ForEach(0..<8, id: \.self) { _ in
+                        SkeletonTrackRow()
+                        Divider().padding(.leading, 68)
+                    }
+                    Spacer()
+                }
+            } else if let loadError, artists.isEmpty {
+                ContentUnavailableView {
+                    Label("Unable to Load Artists", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(loadError.localizedDescription)
+                } actions: {
+                    Button("Retry") {
+                        loadTask?.cancel()
+                        loadTask = Task { await loadArtists() }
+                    }
+                    .buttonStyle(.bordered)
+                }
             } else if artists.isEmpty {
                 ContentUnavailableView("No Artists", systemImage: "person.2")
             } else {
@@ -38,15 +59,17 @@ struct LibraryArtistsView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    sortDirection.toggle()
-                    Task { await reloadArtists() }
-                } label: {
-                    Label(
-                        sortDirection.isAscending ? "A → Z" : "Z → A",
-                        systemImage: sortDirection.systemImage
-                    )
+            if isActive {
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        sortDirection.toggle()
+                        Task { await reloadArtists() }
+                    } label: {
+                        Label(
+                            sortDirection.isAscending ? "A → Z" : "Z → A",
+                            systemImage: sortDirection.systemImage
+                        )
+                    }
                 }
             }
         }
@@ -55,9 +78,17 @@ struct LibraryArtistsView: View {
 
     private var artistListContent: some View {
         ScrollViewReader { proxy in
-            ZStack(alignment: .trailing) {
+            HStack(spacing: 0) {
                 artistList
-                alphabeticIndex(proxy: proxy)
+
+                SectionIndexRail(
+                    availableLetters: Set(letterCache),
+                    onScrollTo: { letter in
+                        withAnimation(.snappy(duration: 0.2)) {
+                            proxy.scrollTo(letter, anchor: .top)
+                        }
+                    }
+                )
             }
         }
     }
@@ -93,34 +124,18 @@ struct LibraryArtistsView: View {
         }
     }
 
-    @ViewBuilder
-    private func alphabeticIndex(proxy: ScrollViewProxy) -> some View {
-        if letterCache.count > 3 {
-            VStack(spacing: 2) {
-                ForEach(letterCache, id: \.self) { letter in
-                    Button {
-                        withAnimation { proxy.scrollTo(letter, anchor: .top) }
-                    } label: {
-                        Text(letter)
-                            .font(.system(size: 10, weight: .semibold))
-                            .frame(width: 14, height: 14)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.trailing, 4)
-            .foregroundStyle(.tint)
-        }
-    }
-
     private func loadArtists() async {
         do {
             let response = try await musicService.libraryArtists(direction: sortDirection)
+            guard !Task.isCancelled else { return }
             artists = Array(response.items)
             hasMore = response.items.count == 100
             isLoading = false
+            loadError = nil
             rebuildSections()
         } catch {
+            guard !Task.isCancelled else { return }
+            loadError = error
             isLoading = false
         }
     }
@@ -140,11 +155,13 @@ struct LibraryArtistsView: View {
                 offset: artists.count,
                 direction: sortDirection
             )
+            guard !Task.isCancelled else { return }
             artists.append(contentsOf: response.items)
             hasMore = response.items.count == 100
             isLoading = false
             rebuildSections()
         } catch {
+            guard !Task.isCancelled else { return }
             isLoading = false
         }
     }
@@ -153,7 +170,7 @@ struct LibraryArtistsView: View {
 #Preview("Library Artists") {
     PreviewHost {
         NavigationStack {
-            LibraryArtistsView()
+            LibraryArtistsView(isActive: true)
         }
     }
 }

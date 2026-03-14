@@ -2,6 +2,8 @@ import SwiftUI
 import MusicKit
 
 struct LibraryView: View {
+    @Environment(PlayerService.self) private var player
+    @Environment(MusicService.self) private var musicService
     @State private var selection: LibrarySection = .songs
 
     enum LibrarySection: String, CaseIterable {
@@ -22,16 +24,32 @@ struct LibraryView: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
 
-            Group {
-                switch selection {
-                case .songs: LibrarySongsView()
-                case .albums: LibraryAlbumsView()
-                case .playlists: LibraryPlaylistsView()
-                case .artists: LibraryArtistsView()
-                }
+            ZStack {
+                LibrarySongsView(isActive: selection == .songs)
+                    .opacity(selection == .songs ? 1 : 0)
+                    .allowsHitTesting(selection == .songs)
+                LibraryAlbumsView(isActive: selection == .albums)
+                    .opacity(selection == .albums ? 1 : 0)
+                    .allowsHitTesting(selection == .albums)
+                LibraryPlaylistsView(isActive: selection == .playlists)
+                    .opacity(selection == .playlists ? 1 : 0)
+                    .allowsHitTesting(selection == .playlists)
+                LibraryArtistsView(isActive: selection == .artists)
+                    .opacity(selection == .artists ? 1 : 0)
+                    .allowsHitTesting(selection == .artists)
             }
         }
         .navigationTitle("Library")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    Haptic.medium()
+                    Task { try? await player.playRandomSong(using: musicService) }
+                } label: {
+                    Label("Play Random", systemImage: "dice")
+                }
+            }
+        }
         .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
         .navigationDestination(for: Album.self) { AlbumDetailView(album: $0) }
         .navigationDestination(for: Playlist.self) { PlaylistDetailView(playlist: $0) }
