@@ -7,6 +7,21 @@ struct MusicBrowserApp: App {
     @State private var musicService = MusicService()
     @State private var playerService = PlayerService()
     @State private var analysisService = AnalysisService()
+    @State private var presetService = FilterPresetService()
+    @State private var lyricsService = LyricsService()
+    @State private var annotationService = AnnotationService()
+
+    let container: ModelContainer
+
+    init() {
+        let schema = Schema([SongAnalysis.self, SongAnnotation.self])
+        let config = ModelConfiguration(cloudKitDatabase: .automatic)
+        do {
+            container = try ModelContainer(for: schema, configurations: [config])
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -14,12 +29,15 @@ struct MusicBrowserApp: App {
                 .environment(musicService)
                 .environment(playerService)
                 .environment(analysisService)
+                .environment(presetService)
+                .environment(lyricsService)
+                .environment(annotationService)
                 .task {
                     let status = await MusicAuthorization.request()
                     musicService.isAuthorized = (status == .authorized)
                 }
         }
-        .modelContainer(for: SongAnalysis.self)
+        .modelContainer(container)
         #if os(macOS)
         .defaultSize(width: 1100, height: 750)
         #endif

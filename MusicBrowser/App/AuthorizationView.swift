@@ -2,6 +2,8 @@ import SwiftUI
 import MusicKit
 
 struct AuthorizationView: View {
+    @Environment(MusicService.self) private var musicService
+
     var body: some View {
         ContentUnavailableView {
             Label("Apple Music", systemImage: "music.note")
@@ -10,7 +12,10 @@ struct AuthorizationView: View {
         } actions: {
             Button("Request Access") {
                 Task {
-                    _ = await MusicAuthorization.request()
+                    let status = await MusicAuthorization.request()
+                    await MainActor.run {
+                        musicService.isAuthorized = (status == .authorized)
+                    }
                 }
             }
             .buttonStyle(.borderedProminent)

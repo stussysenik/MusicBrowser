@@ -8,5 +8,13 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+	</array>
+	<key>com.apple.developer.icloud-containers</key>
+	<array>
+		<string>iCloud.com.musicbrowser.app</string>
+	</array>
 </dict>
 </plist>
