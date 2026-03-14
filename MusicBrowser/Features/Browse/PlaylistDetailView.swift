@@ -8,6 +8,7 @@ struct PlaylistDetailView: View {
 
     @State private var detailedPlaylist: Playlist?
     @State private var isLoading = true
+    @State private var loadError: Error?
 
     private var display: Playlist { detailedPlaylist ?? playlist }
     private var tracks: MusicItemCollection<Track>? { display.tracks }
@@ -66,10 +67,7 @@ struct PlaylistDetailView: View {
             .controlSize(.large)
 
             Button {
-                Task {
-                    player.toggleShuffle()
-                    try? await player.playPlaylist(display)
-                }
+                Task { try? await player.playPlaylistShuffled(display) }
             } label: {
                 Label("Shuffle", systemImage: "shuffle")
                     .frame(maxWidth: .infinity)
@@ -82,7 +80,21 @@ struct PlaylistDetailView: View {
     @ViewBuilder
     private var trackList: some View {
         if isLoading {
-            ProgressView().padding(.top, 20)
+            VStack(spacing: 0) {
+                ForEach(0..<6, id: \.self) { _ in
+                    SkeletonTrackRow()
+                    Divider().padding(.leading, 64)
+                }
+            }
+        } else if let loadError {
+            ContentUnavailableView {
+                Label("Unable to Load Tracks", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text(loadError.localizedDescription)
+            } actions: {
+                Button("Retry") { Task { await loadDetail() } }
+                    .buttonStyle(.bordered)
+            }
         } else if let tracks, !tracks.isEmpty {
             LazyVStack(spacing: 0) {
                 ForEach(Array(tracks.enumerated()), id: \.element.id) { idx, track in
@@ -107,10 +119,13 @@ struct PlaylistDetailView: View {
     }
 
     private func loadDetail() async {
+        isLoading = true
+        loadError = nil
         do {
             detailedPlaylist = try await musicService.playlistWithTracks(playlist)
             isLoading = false
         } catch {
+            loadError = error
             isLoading = false
         }
     }

@@ -8,17 +8,35 @@ struct ArtistDetailView: View {
 
     @State private var detailedArtist: Artist?
     @State private var isLoading = true
+    @State private var loadError: Error?
 
     private var display: Artist { detailedArtist ?? artist }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                header
-                topSongs
-                albums
+        Group {
+            if isLoading && detailedArtist == nil {
+                SkeletonArtistDetail()
+            } else if let loadError, detailedArtist == nil {
+                ContentUnavailableView {
+                    Label("Unable to Load", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(loadError.localizedDescription)
+                } actions: {
+                    Button("Retry") {
+                        Task { await loadDetail() }
+                    }
+                    .buttonStyle(.bordered)
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        header
+                        topSongs
+                        albums
+                    }
+                    .padding()
+                }
             }
-            .padding()
         }
         .navigationTitle(artist.name)
         .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
@@ -120,10 +138,13 @@ struct ArtistDetailView: View {
     }
 
     private func loadDetail() async {
+        isLoading = true
+        loadError = nil
         do {
             detailedArtist = try await musicService.artistDetail(artist)
             isLoading = false
         } catch {
+            loadError = error
             isLoading = false
         }
     }
