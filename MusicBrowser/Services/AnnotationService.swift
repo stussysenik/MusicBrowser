@@ -1,0 +1,57 @@
+import Foundation
+import Observation
+import SwiftData
+
+@Observable
+final class AnnotationService {
+    func annotation(for songID: String, in context: ModelContext) -> SongAnnotation? {
+        let predicate = #Predicate<SongAnnotation> { $0.songID == songID }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    func saveAnnotation(_ annotation: SongAnnotation, in context: ModelContext) {
+        annotation.updatedAt = .now
+        context.insert(annotation)
+        try? context.save()
+    }
+
+    func allAnnotations(in context: ModelContext) -> [SongAnnotation] {
+        let descriptor = FetchDescriptor<SongAnnotation>(
+            sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    func exportJSON(in context: ModelContext) throws -> Data {
+        let annotations = allAnnotations(in: context)
+        let payload = annotations.map { ExportEntry(from: $0) }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return try encoder.encode(payload)
+    }
+}
+
+private struct ExportEntry: Codable {
+    let songID: String
+    let title: String
+    let artistName: String
+    let notes: String
+    let tags: [String]
+    let rating: Int
+    let createdAt: Date
+    let updatedAt: Date
+
+    init(from annotation: SongAnnotation) {
+        songID = annotation.songID
+        title = annotation.title
+        artistName = annotation.artistName
+        notes = annotation.notes
+        tags = annotation.tags
+        rating = annotation.rating
+        createdAt = annotation.createdAt
+        updatedAt = annotation.updatedAt
+    }
+}

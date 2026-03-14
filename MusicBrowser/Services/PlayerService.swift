@@ -45,7 +45,15 @@ final class PlayerService {
             }
             .store(in: &cancellables)
 
-        // 100ms timer for smooth progress bar
+        syncState()
+    }
+
+    deinit { timerTask?.cancel() }
+
+    // MARK: - Timer Management
+
+    private func startProgressTimer() {
+        guard timerTask == nil else { return }
         timerTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
                 self?.syncPlaybackTime()
@@ -54,14 +62,25 @@ final class PlayerService {
         }
     }
 
-    deinit { timerTask?.cancel() }
+    private func stopProgressTimer() {
+        timerTask?.cancel()
+        timerTask = nil
+    }
 
     // MARK: - Sync
 
     private func syncState() {
+        let wasPlaying = isPlaying
         isPlaying = musicPlayer.state.playbackStatus == .playing
         shuffleIsOn = (musicPlayer.state.shuffleMode ?? .off) != .off
         repeatMode = musicPlayer.state.repeatMode ?? .none
+
+        if isPlaying && !wasPlaying {
+            startProgressTimer()
+        } else if !isPlaying && wasPlaying {
+            stopProgressTimer()
+            syncPlaybackTime()
+        }
     }
 
     private func syncQueue() {
@@ -191,6 +210,32 @@ final class PlayerService {
 
     func playNext(_ song: Song) async throws {
         try await musicPlayer.queue.insert(song, position: .afterCurrentEntry)
+    }
+
+    // MARK: - Shuffled Play (race-condition-free)
+
+    func playAlbumShuffled(_ album: Album) async throws {
+        musicPlayer.state.shuffleMode = .songs
+        shuffleIsOn = true
+        musicPlayer.queue = [album]
+        try await musicPlayer.play()
+    }
+
+    func playPlaylistShuffled(_ playlist: Playlist) async throws {
+        musicPlayer.state.shuffleMode = .songs
+        shuffleIsOn = true
+        musicPlayer.queue = [playlist]
+        try await musicPlayer.play()
+    }
+
+    // MARK: - True Random
+
+    func playRandomSong(using musicService: MusicService) async throws {
+        let song = try await musicService.randomLibrarySong()
+        musicPlayer.state.shuffleMode = .off
+        shuffleIsOn = false
+        musicPlayer.queue = [song]
+        try await musicPlayer.play()
     }
 
     // MARK: - Shuffle & Repeat
