@@ -36,6 +36,15 @@ struct MiniPlayerView: View {
                 Spacer()
 
                 Button {
+                    Task { try? await player.skipBackward() }
+                } label: {
+                    Image(systemName: "backward.fill")
+                        .font(.callout)
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+
+                Button {
                     Task { try? await player.togglePlayPause() }
                 } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
@@ -60,7 +69,7 @@ struct MiniPlayerView: View {
             .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
             .padding(.horizontal, 8)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressable)
     }
 }
 

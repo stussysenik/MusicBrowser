@@ -8,6 +8,9 @@ struct PreviewHost<Content: View>: View {
     private let musicService: MusicService
     private let playerService: PlayerService
     private let analysisService: AnalysisService
+    private let presetService: FilterPresetService
+    private let lyricsService: LyricsService
+    private let annotationService: AnnotationService
     private let content: Content
 
     init(@ViewBuilder content: () -> Content) {
@@ -16,6 +19,9 @@ struct PreviewHost<Content: View>: View {
         self.musicService = musicService
         self.playerService = PlayerService()
         self.analysisService = AnalysisService()
+        self.presetService = FilterPresetService()
+        self.lyricsService = LyricsService()
+        self.annotationService = AnnotationService()
         self.content = content()
     }
 
@@ -24,7 +30,10 @@ struct PreviewHost<Content: View>: View {
             .environment(musicService)
             .environment(playerService)
             .environment(analysisService)
-            .modelContainer(for: SongAnalysis.self, inMemory: true)
+            .environment(presetService)
+            .environment(lyricsService)
+            .environment(annotationService)
+            .modelContainer(for: [SongAnalysis.self, SongAnnotation.self], inMemory: true)
     }
 }
 
