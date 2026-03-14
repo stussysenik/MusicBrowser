@@ -9,6 +9,7 @@ struct ArtworkView: View {
         if let artwork {
             ArtworkImage(artwork, width: size, height: size)
                 .clipShape(RoundedRectangle(cornerRadius: size > 80 ? 10 : 6))
+                .transition(.opacity.animation(.easeIn(duration: 0.2)))
         } else {
             RoundedRectangle(cornerRadius: size > 80 ? 10 : 6)
                 .fill(.quaternary)
