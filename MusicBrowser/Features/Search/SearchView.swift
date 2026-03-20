@@ -12,6 +12,7 @@ struct SearchView: View {
     @State private var isSearching = false
     @State private var searchScope: SearchScope = .catalog
     @State private var addToPlaylistSong: Song?
+    @State private var addedToLibrary: Set<MusicItemID> = []
 
     private enum SearchScope: String, CaseIterable {
         case catalog = "Catalog"
@@ -180,6 +181,22 @@ struct SearchView: View {
                         } label: {
                             Label("Add to Playlist", systemImage: "music.note.list")
                         }
+                        if searchScope == .catalog {
+                            Divider()
+                            Button {
+                                Task {
+                                    try? await musicService.addToLibrary(song)
+                                    addedToLibrary.insert(song.id)
+                                    Haptic.success()
+                                }
+                            } label: {
+                                Label(
+                                    addedToLibrary.contains(song.id) ? "Added to Library" : "Add to Library",
+                                    systemImage: addedToLibrary.contains(song.id) ? "checkmark" : "plus"
+                                )
+                            }
+                            .disabled(addedToLibrary.contains(song.id))
+                        }
                     }
                 }
             }
@@ -201,6 +218,23 @@ struct SearchView: View {
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                             }
+                        }
+                    }
+                    .contextMenu {
+                        if searchScope == .catalog {
+                            Button {
+                                Task {
+                                    try? await musicService.addToLibrary(album)
+                                    addedToLibrary.insert(album.id)
+                                    Haptic.success()
+                                }
+                            } label: {
+                                Label(
+                                    addedToLibrary.contains(album.id) ? "Added to Library" : "Add to Library",
+                                    systemImage: addedToLibrary.contains(album.id) ? "checkmark" : "plus"
+                                )
+                            }
+                            .disabled(addedToLibrary.contains(album.id))
                         }
                     }
                 }

@@ -4,13 +4,14 @@ import MusicKit
 struct LibraryView: View {
     @Environment(PlayerService.self) private var player
     @Environment(MusicService.self) private var musicService
-    @State private var selection: LibrarySection = .songs
+    @AppStorage("librarySection") private var selection: LibrarySection = .songs
 
     enum LibrarySection: String, CaseIterable {
         case songs = "Songs"
         case albums = "Albums"
         case playlists = "Playlists"
         case artists = "Artists"
+        case genres = "Genres"
     }
 
     var body: some View {
@@ -37,10 +38,20 @@ struct LibraryView: View {
                 LibraryArtistsView(isActive: selection == .artists)
                     .opacity(selection == .artists ? 1 : 0)
                     .allowsHitTesting(selection == .artists)
+                GenreBrowserView()
+                    .opacity(selection == .genres ? 1 : 0)
+                    .allowsHitTesting(selection == .genres)
             }
         }
         .navigationTitle("Library")
         .toolbar {
+            ToolbarItem(placement: .automatic) {
+                NavigationLink {
+                    NotesListView()
+                } label: {
+                    Label("Notes", systemImage: "note.text")
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     Haptic.medium()
@@ -54,6 +65,7 @@ struct LibraryView: View {
         .navigationDestination(for: Album.self) { AlbumDetailView(album: $0) }
         .navigationDestination(for: Playlist.self) { PlaylistDetailView(playlist: $0) }
         .navigationDestination(for: Artist.self) { ArtistDetailView(artist: $0) }
+        .navigationDestination(for: GenreGroup.self) { GenreDetailView(genreGroup: $0) }
     }
 }
 

@@ -5,20 +5,22 @@ struct LibraryAlbumsView: View {
     let isActive: Bool
 
     @Environment(MusicService.self) private var musicService
+    @Environment(FilterPresetService.self) private var presetService
 
     @State private var albums: [Album] = []
     @State private var isLoading = true
     @State private var hasMore = true
     @State private var loadError: Error?
     @State private var loadTask: Task<Void, Never>?
-    @State private var sortOption: AlbumSortOption = .title
-    @State private var sortDirection: SortDirection = .ascending
-    @State private var grouping: AlbumGrouping = .none
+    @AppStorage("albums.sortOption") private var sortOption: AlbumSortOption = .title
+    @AppStorage("albums.sortDirection") private var sortDirection: SortDirection = .ascending
+    @AppStorage("albums.grouping") private var grouping: AlbumGrouping = .none
 
     // Pre-computed group cache
     @State private var groupCache: [(String, [Album])] = []
 
     // Cached derived values
+    @State private var displayAlbumsCache: [Album] = []
     @State private var availableLettersCache: [String] = []
 
     private let columns = [
@@ -95,55 +97,89 @@ struct LibraryAlbumsView: View {
             loadTask = Task { await reloadAlbums() }
         }
         .onChange(of: grouping) { _, _ in rebuildGroups() }
+        .onChange(of: presetService.pinnedLetters) { old, new in
+            let oldSet = old[.albums] ?? []
+            let newSet = new[.albums] ?? []
+            if oldSet != newSet { rebuildDisplayCache() }
+        }
         .animation(.snappy(duration: 0.2), value: albums.count)
     }
 
     // MARK: - Views
 
+    private var displayAlbums: [Album] { displayAlbumsCache }
+
+    private func rebuildDisplayCache() {
+        let pinned = presetService.pinnedLettersSet(for: .albums)
+        if pinned.isEmpty {
+            displayAlbumsCache = albums
+        } else {
+            displayAlbumsCache = albums.filter { pinned.contains(firstLetter(for: $0.title)) }
+        }
+        rebuildAvailableLetters()
+    }
+
     private var flatGridView: some View {
         ScrollViewReader { proxy in
-            HStack(spacing: 0) {
-                ScrollView {
-                    VStack(spacing: 8) {
-                        HStack {
-                            Text("\(albums.count) albums")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
+            VStack(spacing: 0) {
+                if presetService.hasPinnedLetters(for: .albums) {
+                    PinnedLetterChipsBar(
+                        pinnedLetters: presetService.pinnedLettersSet(for: .albums),
+                        onUnpin: { letter in
+                            withAnimation { presetService.unpinLetter(letter, for: .albums) }
+                        },
+                        onClearAll: {
+                            withAnimation { presetService.clearPinnedLetters(for: .albums) }
                         }
-                        .padding(.horizontal)
-                        .id("albums-top")
-
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(Array(albums.enumerated()), id: \.element.id) { idx, album in
-                                NavigationLink(value: album) {
-                                    AlbumCard(album, size: 160)
-                                }
-                                .buttonStyle(.plain)
-                                .id(album.id.rawValue)
-                                .task {
-                                    if idx == albums.count - 5 { await loadMore() }
-                                }
-                            }
-                        }
-                        .padding()
-
-                        if hasMore {
-                            ProgressView().padding()
-                        }
-                    }
+                    )
                 }
 
-                SectionIndexRail(
-                    availableLetters: Set(availableLettersCache),
-                    onScrollTo: { letter in
-                        if let firstMatch = albums.first(where: { firstLetter(for: $0.title) == letter }) {
-                            withAnimation(.snappy(duration: 0.2)) {
-                                proxy.scrollTo(firstMatch.id.rawValue, anchor: .top)
+                ZStack(alignment: .trailing) {
+                    ScrollView {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Text("\(displayAlbums.count) albums")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
                             }
+                            .padding(.horizontal)
+                            .id("albums-top")
+
+                            LazyVGrid(columns: columns, spacing: 20) {
+                                ForEach(Array(displayAlbums.indices), id: \.self) { idx in
+                                    let album = displayAlbums[idx]
+                                    // Insert letter anchor before first album of each letter group
+                                    if idx == 0 || firstLetter(for: album.title) != firstLetter(for: displayAlbums[idx - 1].title) {
+                                        Color.clear
+                                            .frame(height: 0)
+                                            .id("letter-\(firstLetter(for: album.title))")
+                                    }
+
+                                    NavigationLink(value: album) {
+                                        AlbumCard(album, size: 160)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding()
                         }
+                        .padding(.trailing, 44)
                     }
-                )
+
+                    SectionIndexRail(
+                        availableLetters: Set(availableLettersCache),
+                        pinnedLetters: presetService.pinnedLettersSet(for: .albums),
+                        onScrollTo: { letter in
+                            withAnimation(.snappy(duration: 0.2)) {
+                                proxy.scrollTo("letter-\(letter)", anchor: .top)
+                            }
+                        },
+                        onDoubleTap: { letter in
+                            withAnimation { presetService.togglePinnedLetter(letter, for: .albums) }
+                        }
+                    )
+                }
             }
         }
     }
@@ -168,12 +204,6 @@ struct LibraryAlbumsView: View {
                     }
                 }
 
-                if hasMore {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .task { await loadMore() }
-                }
             }
             .padding()
         }
@@ -222,14 +252,14 @@ struct LibraryAlbumsView: View {
 
     private func loadAlbums() async {
         do {
-            let response = try await musicService.libraryAlbums(sort: sortOption, direction: sortDirection)
+            let allAlbums = try await musicService.allLibraryAlbums()
             guard !Task.isCancelled else { return }
-            albums = Array(response.items)
-            hasMore = response.items.count == 100
+            albums = allAlbums
+            hasMore = false
             isLoading = false
             loadError = nil
             rebuildGroups()
-            rebuildAvailableLetters()
+            rebuildDisplayCache()
         } catch {
             guard !Task.isCancelled else { return }
             loadError = error
@@ -240,29 +270,8 @@ struct LibraryAlbumsView: View {
     private func reloadAlbums() async {
         albums = []
         isLoading = true
-        hasMore = true
+        hasMore = false
         await loadAlbums()
-    }
-
-    private func loadMore() async {
-        guard hasMore, !isLoading else { return }
-        isLoading = true
-        do {
-            let response = try await musicService.libraryAlbums(
-                offset: albums.count,
-                sort: sortOption,
-                direction: sortDirection
-            )
-            guard !Task.isCancelled else { return }
-            albums.append(contentsOf: response.items)
-            hasMore = response.items.count == 100
-            isLoading = false
-            rebuildGroups()
-            rebuildAvailableLetters()
-        } catch {
-            guard !Task.isCancelled else { return }
-            isLoading = false
-        }
     }
 }
 

@@ -6,12 +6,13 @@ struct ContentView: View {
     @Environment(MusicService.self) private var musicService
     @Environment(PlayerService.self) private var player
     @Environment(AnalysisService.self) private var analysisService
+    @Environment(StatsService.self) private var statsService
     @Environment(\.modelContext) private var modelContext
-    @State private var selectedTab: Tab = .library
+    @AppStorage("selectedTab") private var selectedTab: Tab = .library
     @State private var showNowPlaying = false
 
-    enum Tab: Hashable {
-        case library, search
+    enum Tab: String, Hashable {
+        case library, stats, search
     }
 
     var body: some View {
@@ -24,14 +25,21 @@ struct ContentView: View {
                 .tag(Tab.library)
 
                 NavigationStack {
+                    StatsView()
+                }
+                .tabItem { Label("Stats", systemImage: "chart.bar.xaxis") }
+                .tag(Tab.stats)
+
+                NavigationStack {
                     SearchView()
                 }
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }
                 .tag(Tab.search)
             }
-            .safeAreaInset(edge: .bottom) {
+            .overlay(alignment: .bottom) {
                 if player.currentTitle != nil {
                     MiniPlayerView(showNowPlaying: $showNowPlaying)
+                        .padding(.bottom, 54)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -41,9 +49,29 @@ struct ContentView: View {
             }
             .onAppear {
                 analysisService.configure(with: modelContext)
+                statsService.configure(with: modelContext)
+                wireSessionCallbacks()
             }
         } else {
             AuthorizationView()
+        }
+    }
+
+    /// Connects PlayerService session hooks to StatsService for listening tracking.
+    private func wireSessionCallbacks() {
+        player.onSongStarted = { songID, title, artist, album, genres, duration, year in
+            statsService.startSession(
+                songID: songID.rawValue,
+                title: title,
+                artistName: artist,
+                albumTitle: album,
+                genreNames: genres,
+                songDuration: duration,
+                releaseYear: year
+            )
+        }
+        player.onSongEnded = { songID, completed in
+            statsService.endSession(songID: songID.rawValue, completed: completed)
         }
     }
 }

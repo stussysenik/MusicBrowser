@@ -7,14 +7,15 @@ struct LibrarySongsView: View {
     @Environment(MusicService.self) private var musicService
     @Environment(AnalysisService.self) private var analysisService
     @Environment(PlayerService.self) private var player
+    @Environment(FilterPresetService.self) private var presetService
 
     @State private var songs: [Song] = []
     @State private var isLoading = true
     @State private var hasMore = true
     @State private var loadError: Error?
     @State private var loadTask: Task<Void, Never>?
-    @State private var sortOption: SongSortOption = .title
-    @State private var sortDirection: SortDirection = .ascending
+    @AppStorage("songs.sortOption") private var sortOption: SongSortOption = .title
+    @AppStorage("songs.sortDirection") private var sortDirection: SortDirection = .ascending
     @State private var filterArtist: String = ""
     @State private var filterGenre: String = ""
     @State private var bpmMin: Double = 0
@@ -91,6 +92,11 @@ struct LibrarySongsView: View {
         }
         .onChange(of: filterArtist) { _, _ in rebuildDisplayCache() }
         .onChange(of: filterGenre) { _, _ in rebuildDisplayCache() }
+        .onChange(of: presetService.pinnedLetters) { old, new in
+            let oldSet = old[.songs] ?? []
+            let newSet = new[.songs] ?? []
+            if oldSet != newSet { rebuildFilteredCache() }
+        }
         .animation(.snappy(duration: 0.2), value: filteredSongsCache.count)
         .sheet(item: $addToPlaylistSong) { song in
             AddToPlaylistSheet(song: song)
@@ -101,51 +107,105 @@ struct LibrarySongsView: View {
 
     private var songList: some View {
         ScrollViewReader { proxy in
-            HStack(spacing: 0) {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        HStack {
-                            Text("\(filteredSongs.count) songs")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
+            VStack(spacing: 0) {
+                // Pinned letters chips bar
+                if presetService.hasPinnedLetters(for: .songs) {
+                    PinnedLetterChipsBar(
+                        pinnedLetters: presetService.pinnedLettersSet(for: .songs),
+                        onUnpin: { letter in
+                            withAnimation { presetService.unpinLetter(letter, for: .songs) }
+                        },
+                        onClearAll: {
+                            withAnimation { presetService.clearPinnedLetters(for: .songs) }
                         }
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .id("songs-top")
-
-                        ForEach(Array(filteredSongs.enumerated()), id: \.element.id) { idx, song in
-                            songRow(song)
-                                .id(song.id.rawValue)
-                                .task {
-                                    if idx == filteredSongs.count - 5 { await loadMore() }
-                                }
-
-                            if idx < filteredSongs.count - 1 {
-                                Divider().padding(.leading, 68)
-                            }
-                        }
-
-                        if hasMore {
-                            ProgressView()
-                                .padding()
-                                .symbolEffect(.pulse, options: .repeating)
-                        }
-                    }
+                    )
                 }
 
-                SectionIndexRail(
-                    availableLetters: Set(availableLetters),
-                    onScrollTo: { letter in
-                        if let firstMatch = filteredSongs.first(where: { firstLetter(for: $0.title) == letter }) {
-                            withAnimation(.snappy(duration: 0.2)) {
-                                proxy.scrollTo(firstMatch.id.rawValue, anchor: .top)
+                ZStack(alignment: .trailing) {
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            // Genre play bar
+                            if !filterGenre.isEmpty {
+                                genrePlayBar
+                            }
+
+                            HStack {
+                                Text("\(filteredSongs.count) songs")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                            .id("songs-top")
+
+                            ForEach(Array(filteredSongs.indices), id: \.self) { idx in
+                                let song = filteredSongs[idx]
+                                // Insert invisible letter anchor before first song of each letter group
+                                if idx == 0 || firstLetter(for: song.title) != firstLetter(for: filteredSongs[idx - 1].title) {
+                                    Color.clear
+                                        .frame(height: 0)
+                                        .id("letter-\(firstLetter(for: song.title))")
+                                }
+
+                                songRow(song)
+
+                                if idx < filteredSongs.count - 1 {
+                                    Divider().padding(.leading, 68)
+                                }
                             }
                         }
+                        .padding(.trailing, 44)
                     }
-                )
+
+                    SectionIndexRail(
+                        availableLetters: Set(availableLetters),
+                        pinnedLetters: presetService.pinnedLettersSet(for: .songs),
+                        onScrollTo: { letter in
+                            withAnimation(.snappy(duration: 0.2)) {
+                                proxy.scrollTo("letter-\(letter)", anchor: .top)
+                            }
+                        },
+                        onDoubleTap: { letter in
+                            withAnimation { presetService.togglePinnedLetter(letter, for: .songs) }
+                        }
+                    )
+                }
             }
         }
+    }
+
+    // MARK: - Genre Play Bar
+
+    private var genrePlayBar: some View {
+        HStack(spacing: 12) {
+            Label(filterGenre, systemImage: "music.note")
+                .font(.subheadline.weight(.medium))
+                .lineLimit(1)
+
+            Spacer()
+
+            Button {
+                Haptic.medium()
+                Task { try? await player.playSongs(filteredSongs) }
+            } label: {
+                Image(systemName: "play.fill")
+                    .font(.body)
+            }
+            .disabled(filteredSongs.isEmpty)
+
+            Button {
+                Haptic.medium()
+                Task { try? await player.playSongsShuffled(filteredSongs) }
+            } label: {
+                Image(systemName: "shuffle")
+                    .font(.body)
+            }
+            .disabled(filteredSongs.isEmpty)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 10)
+        .background(.quaternary.opacity(0.15))
     }
 
     // MARK: - Song Row
@@ -334,8 +394,15 @@ struct LibrarySongsView: View {
     }
 
     private func rebuildFilteredCache() {
+        let pinned = presetService.pinnedLettersSet(for: .songs)
+        if pinned.isEmpty {
+            filteredSongsCache = displayCache
+        } else {
+            filteredSongsCache = displayCache.filter { song in
+                pinned.contains(StringUtils.firstLetter(of: song.title))
+            }
+        }
         availableLettersCache = displayCache.availableLetters
-        filteredSongsCache = displayCache
     }
 
     private var filteredSongs: [Song] { filteredSongsCache }
@@ -349,10 +416,10 @@ struct LibrarySongsView: View {
 
     private func loadSongs() async {
         do {
-            let response = try await musicService.librarySongs(sort: sortOption, direction: sortDirection)
+            let allSongs = try await musicService.allLibrarySongs()
             guard !Task.isCancelled else { return }
-            songs = Array(response.items)
-            hasMore = response.items.count == 100
+            songs = allSongs
+            hasMore = false
             isLoading = false
             loadError = nil
             rebuildIndexes()
@@ -368,31 +435,8 @@ struct LibrarySongsView: View {
     private func reloadSongs() async {
         songs = []
         isLoading = true
-        hasMore = true
+        hasMore = false
         await loadSongs()
-    }
-
-    private func loadMore() async {
-        guard hasMore, !isLoading else { return }
-        isLoading = true
-        do {
-            let response = try await musicService.librarySongs(
-                offset: songs.count,
-                sort: sortOption,
-                direction: sortDirection
-            )
-            guard !Task.isCancelled else { return }
-            let newSongs = Array(response.items)
-            songs.append(contentsOf: newSongs)
-            hasMore = response.items.count == 100
-            isLoading = false
-            rebuildIndexes()
-            rebuildDisplayCache()
-            await analysisService.analyzeBatch(newSongs)
-        } catch {
-            guard !Task.isCancelled else { return }
-            isLoading = false
-        }
     }
 }
 

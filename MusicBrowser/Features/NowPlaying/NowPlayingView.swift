@@ -4,29 +4,42 @@ import MusicKit
 struct NowPlayingView: View {
     @Environment(PlayerService.self) private var player
     @Environment(MusicService.self) private var musicService
+    @Environment(StatsService.self) private var statsService
     @Environment(\.dismiss) private var dismiss
 
     @State private var isSeeking = false
     @State private var seekTime: TimeInterval = 0
     @State private var showQueue = false
     @State private var showLyrics = false
+    @State private var recentSessions: [ListeningSession] = []
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Spacer()
-                artwork
-                Spacer().frame(height: 32)
-                trackInfo
-                Spacer().frame(height: 24)
-                progressBar
-                Spacer().frame(height: 24)
-                controls
-                Spacer().frame(height: 16)
-                secondaryControls
-                Spacer()
+            ScrollView {
+                VStack(spacing: 0) {
+                    Spacer().frame(height: 16)
+                    artwork
+                    Spacer().frame(height: 32)
+                    trackInfo
+                    Spacer().frame(height: 24)
+                    progressBar
+                    Spacer().frame(height: 24)
+                    controls
+                    Spacer().frame(height: 16)
+                    secondaryControls
+                    Spacer().frame(height: 32)
+
+                    if !recentSessions.isEmpty {
+                        recentlyPlayedSection
+                    }
+
+                    Spacer().frame(height: 16)
+                }
+                .padding(.horizontal, 28)
             }
-            .padding(.horizontal, 28)
+            .onAppear {
+                recentSessions = statsService.recentSessions(limit: 20)
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: {
@@ -197,6 +210,35 @@ struct NowPlayingView: View {
                     .foregroundStyle(player.repeatMode != MusicKit.MusicPlayer.RepeatMode.none ? .primary : .tertiary)
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Recently Played
+
+    private var recentlyPlayedSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Recently Played")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            ForEach(recentSessions, id: \.id) { session in
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(session.title)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                        Text(session.artistName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Text(session.startedAt, style: .relative)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.vertical, 2)
+            }
         }
     }
 

@@ -1,0 +1,9 @@
+appId: com.musicbrowser.app
+---
+- launchApp:
+    arguments:
+      - "-useMockData"
+- assertVisible: "Library"
+- tapOn: "Albums"
+- scroll
+- assertVisible: "albums"

@@ -1,0 +1,13 @@
+appId: com.musicbrowser.app
+---
+- launchApp:
+    arguments:
+      - "-useMockData"
+- tapOn: "Stats"
+- assertVisible: "Listening"
+- tapOn: "Library"
+- assertVisible: "Genre Distribution"
+- tapOn: "Discover"
+- assertVisible: "Weekly Recap"
+- tapOn: "DJ Tools"
+- assertVisible: "BPM Range"

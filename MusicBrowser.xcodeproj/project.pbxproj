@@ -52,6 +52,27 @@
 		AA00000100000003AABBCC03 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000003AABBCC03 /* HapticEngine.swift */; };
 		AA00000100000004AABBCC04 /* LyricsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000004AABBCC04 /* LyricsService.swift */; };
 		AA00000100000005AABBCC05 /* LyricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000005AABBCC05 /* LyricsView.swift */; };
+		DD00EE0100000001FA110001 /* ListeningSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000001FA110001 /* ListeningSession.swift */; };
+		DD00EE0100000002FA110002 /* WeeklyRecap.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000002FA110002 /* WeeklyRecap.swift */; };
+		DD00EE0100000003FA110003 /* MLModelManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000003FA110003 /* MLModelManifest.swift */; };
+		DD00EE0100000004FA110004 /* MockItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000004FA110004 /* MockItem.swift */; };
+		DD00EE0100000005FA110005 /* MockDataGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000005FA110005 /* MockDataGenerator.swift */; };
+		DD00EE0100000006FA110006 /* MockDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000006FA110006 /* MockDataService.swift */; };
+		DD00EE0100000007FA110007 /* StatsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000007FA110007 /* StatsService.swift */; };
+		DD00EE0100000008FA110008 /* DiscoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000008FA110008 /* DiscoveryService.swift */; };
+		DD00EE0100000009FA110009 /* AudioAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000009FA110009 /* AudioAnalysisService.swift */; };
+		DD00EE010000000AFA11000A /* AudioFeatureExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE020000000AFA11000A /* AudioFeatureExtractor.swift */; };
+		DD00EE010000000BFA11000B /* ModelDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE020000000BFA11000B /* ModelDownloadManager.swift */; };
+		DD00EE010000000CFA11000C /* PinnedLetterChipsBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE020000000CFA11000C /* PinnedLetterChipsBar.swift */; };
+		DD00EE010000000DFA11000D /* ExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE020000000DFA11000D /* ExportSheet.swift */; };
+		DD00EE010000000EFA11000E /* WeeklyRecapCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE020000000EFA11000E /* WeeklyRecapCard.swift */; };
+		DD00EE010000000FFA11000F /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE020000000FFA11000F /* StatsView.swift */; };
+		DD00EE0100000010FA110010 /* ListeningBehaviorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000010FA110010 /* ListeningBehaviorView.swift */; };
+		DD00EE0100000011FA110011 /* LibraryIntelligenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000011FA110011 /* LibraryIntelligenceView.swift */; };
+		DD00EE0100000012FA110012 /* DiscoveryEngineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000012FA110012 /* DiscoveryEngineView.swift */; };
+		DD00EE0100000013FA110013 /* DJToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00EE0200000013FA110013 /* DJToolsView.swift */; };
+		EE11FF0100000001AB220001 /* NotesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE11FF0200000001AB220001 /* NotesListView.swift */; };
+		FF22AA0100000001BB330001 /* GenreBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF22AA0200000001BB330001 /* GenreBrowserView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -73,6 +94,8 @@
 		21160BB12F5DBE85005BC9CB /* MusicKitExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicKitExtensions.swift; sourceTree = "<group>"; };
 		26DF4291F07345C5F7F37743 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		3DEDECD1FD65EAFD5DB667A7 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		EE11FF0200000001AB220001 /* NotesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesListView.swift; sourceTree = "<group>"; };
+		FF22AA0200000001BB330001 /* GenreBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenreBrowserView.swift; sourceTree = "<group>"; };
 		579FD2522F08D377C4D561D9 /* PlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerService.swift; sourceTree = "<group>"; };
 		603CBA7A9DFF18B07782A253 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		634D55DBC5EC53CBDEEFBCF3 /* TrackRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackRow.swift; sourceTree = "<group>"; };
@@ -102,17 +125,38 @@
 		AA00000200000003AABBCC03 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
 		AA00000200000004AABBCC04 /* LyricsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsService.swift; sourceTree = "<group>"; };
 		AA00000200000005AABBCC05 /* LyricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsView.swift; sourceTree = "<group>"; };
+		DD00EE0200000001FA110001 /* ListeningSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningSession.swift; sourceTree = "<group>"; };
+		DD00EE0200000002FA110002 /* WeeklyRecap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRecap.swift; sourceTree = "<group>"; };
+		DD00EE0200000003FA110003 /* MLModelManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLModelManifest.swift; sourceTree = "<group>"; };
+		DD00EE0200000004FA110004 /* MockItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockItem.swift; sourceTree = "<group>"; };
+		DD00EE0200000005FA110005 /* MockDataGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataGenerator.swift; sourceTree = "<group>"; };
+		DD00EE0200000006FA110006 /* MockDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockDataService.swift; sourceTree = "<group>"; };
+		DD00EE0200000007FA110007 /* StatsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsService.swift; sourceTree = "<group>"; };
+		DD00EE0200000008FA110008 /* DiscoveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryService.swift; sourceTree = "<group>"; };
+		DD00EE0200000009FA110009 /* AudioAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAnalysisService.swift; sourceTree = "<group>"; };
+		DD00EE020000000AFA11000A /* AudioFeatureExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFeatureExtractor.swift; sourceTree = "<group>"; };
+		DD00EE020000000BFA11000B /* ModelDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownloadManager.swift; sourceTree = "<group>"; };
+		DD00EE020000000CFA11000C /* PinnedLetterChipsBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedLetterChipsBar.swift; sourceTree = "<group>"; };
+		DD00EE020000000DFA11000D /* ExportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportSheet.swift; sourceTree = "<group>"; };
+		DD00EE020000000EFA11000E /* WeeklyRecapCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyRecapCard.swift; sourceTree = "<group>"; };
+		DD00EE020000000FFA11000F /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		DD00EE0200000010FA110010 /* ListeningBehaviorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListeningBehaviorView.swift; sourceTree = "<group>"; };
+		DD00EE0200000011FA110011 /* LibraryIntelligenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIntelligenceView.swift; sourceTree = "<group>"; };
+		DD00EE0200000012FA110012 /* DiscoveryEngineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryEngineView.swift; sourceTree = "<group>"; };
+		DD00EE0200000013FA110013 /* DJToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DJToolsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		0067219349A19A2F852706EF /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				FF22AA0200000001BB330001 /* GenreBrowserView.swift */,
 				03E47BF7E0F911B75CC0307A /* LibraryAlbumsView.swift */,
 				D7E6BE7B030C54290648B7BB /* LibraryArtistsView.swift */,
 				8D9DB0283A5E99269EC19B82 /* LibraryPlaylistsView.swift */,
 				D4159ED3FA5D14A4A30844C4 /* LibrarySongsView.swift */,
 				3DEDECD1FD65EAFD5DB667A7 /* LibraryView.swift */,
+				EE11FF0200000001AB220001 /* NotesListView.swift */,
 				A1B2C3D4E5F60718293A4B5D /* SongDetailView.swift */,
 			);
 			path = Library;
@@ -154,6 +198,7 @@
 				BC1731EAED27FD4F17C2A855 /* Info.plist */,
 				0F67813641736540EDC1BC91 /* App */,
 				A4B0D987560DB29A5A97643F /* Features */,
+				DD00EE0300000002FA220002 /* Mocks */,
 				A24B95EEF179102DDF8E67BE /* Models */,
 				F0084D926E4C8755021AEB4F /* Resources */,
 				B1169DA3450DBDFED37BD23E /* Services */,
@@ -196,8 +241,11 @@
 				8A7CD5075E7F69A482EC6E17 /* AlbumCard.swift */,
 				7E69CDC422073D83BC8C3C04 /* ArtworkView.swift */,
 				603CBA7A9DFF18B07782A253 /* Extensions.swift */,
+				DD00EE020000000DFA11000D /* ExportSheet.swift */,
 				B811594BF941C40B4F3E52FD /* LibrarySortOptions.swift */,
+				DD00EE020000000CFA11000C /* PinnedLetterChipsBar.swift */,
 				634D55DBC5EC53CBDEEFBCF3 /* TrackRow.swift */,
+				DD00EE020000000EFA11000E /* WeeklyRecapCard.swift */,
 				02DEEFD42F54EE3900CF6881 /* PreviewHost.swift */,
 				21160B972F5DB565005BC9CB /* AlphabetJumpRail.swift */,
 				21160B9D2F5DBD28005BC9CB /* StringUtils.swift */,
@@ -217,8 +265,11 @@
 		A24B95EEF179102DDF8E67BE /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				DD00EE0200000001FA110001 /* ListeningSession.swift */,
+				DD00EE0200000003FA110003 /* MLModelManifest.swift */,
 				BB9857777AF90063C2C1D248 /* SongAnalysis.swift */,
 				CC11AA0200000001DD00EE01 /* SongAnnotation.swift */,
+				DD00EE0200000002FA110002 /* WeeklyRecap.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -230,6 +281,7 @@
 				0067219349A19A2F852706EF /* Library */,
 				10396E9328CDB7004CE66E96 /* NowPlaying */,
 				137CCFB169BD688ECD32FCC7 /* Search */,
+				DD00EE0300000001FA220001 /* Stats */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -239,11 +291,38 @@
 			children = (
 				011C6F35FE2F9C2889EF72AB /* AnalysisService.swift */,
 				CC11AA0200000002DD00EE02 /* AnnotationService.swift */,
+				DD00EE0200000009FA110009 /* AudioAnalysisService.swift */,
+				DD00EE020000000AFA11000A /* AudioFeatureExtractor.swift */,
+				DD00EE0200000008FA110008 /* DiscoveryService.swift */,
 				AA00000200000004AABBCC04 /* LyricsService.swift */,
+				DD00EE0200000006FA110006 /* MockDataService.swift */,
+				DD00EE020000000BFA11000B /* ModelDownloadManager.swift */,
 				67237535E6BEE92602856B53 /* MusicService.swift */,
 				579FD2522F08D377C4D561D9 /* PlayerService.swift */,
+				DD00EE0200000007FA110007 /* StatsService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		DD00EE0300000002FA220002 /* Mocks */ = {
+			isa = PBXGroup;
+			children = (
+				DD00EE0200000005FA110005 /* MockDataGenerator.swift */,
+				DD00EE0200000004FA110004 /* MockItem.swift */,
+			);
+			path = Mocks;
+			sourceTree = "<group>";
+		};
+		DD00EE0300000001FA220001 /* Stats */ = {
+			isa = PBXGroup;
+			children = (
+				DD00EE0200000012FA110012 /* DiscoveryEngineView.swift */,
+				DD00EE0200000013FA110013 /* DJToolsView.swift */,
+				DD00EE0200000011FA110011 /* LibraryIntelligenceView.swift */,
+				DD00EE0200000010FA110010 /* ListeningBehaviorView.swift */,
+				DD00EE020000000FFA11000F /* StatsView.swift */,
+			);
+			path = Stats;
 			sourceTree = "<group>";
 		};
 		F0084D926E4C8755021AEB4F /* Resources */ = {
@@ -344,6 +423,7 @@
 				D3143B31C87E15F8833D088B /* LibrarySongsView.swift in Sources */,
 				C2C0CBBF4F2FB2155A239748 /* LibrarySortOptions.swift in Sources */,
 				86155EB1424CE1CDDD5A7CD0 /* LibraryView.swift in Sources */,
+				EE11FF0100000001AB220001 /* NotesListView.swift in Sources */,
 				21160BB22F5DBE85005BC9CB /* MusicKitExtensions.swift in Sources */,
 				21160BA22F5DBD37005BC9CB /* FilterableProtocols.swift in Sources */,
 				14965F5A05A30844C6C977CA /* MiniPlayerView.swift in Sources */,
@@ -368,6 +448,26 @@
 				AA00000100000003AABBCC03 /* HapticEngine.swift in Sources */,
 				AA00000100000004AABBCC04 /* LyricsService.swift in Sources */,
 				AA00000100000005AABBCC05 /* LyricsView.swift in Sources */,
+				DD00EE0100000001FA110001 /* ListeningSession.swift in Sources */,
+				DD00EE0100000002FA110002 /* WeeklyRecap.swift in Sources */,
+				DD00EE0100000003FA110003 /* MLModelManifest.swift in Sources */,
+				DD00EE0100000004FA110004 /* MockItem.swift in Sources */,
+				DD00EE0100000005FA110005 /* MockDataGenerator.swift in Sources */,
+				DD00EE0100000006FA110006 /* MockDataService.swift in Sources */,
+				DD00EE0100000007FA110007 /* StatsService.swift in Sources */,
+				DD00EE0100000008FA110008 /* DiscoveryService.swift in Sources */,
+				DD00EE0100000009FA110009 /* AudioAnalysisService.swift in Sources */,
+				DD00EE010000000AFA11000A /* AudioFeatureExtractor.swift in Sources */,
+				DD00EE010000000BFA11000B /* ModelDownloadManager.swift in Sources */,
+				DD00EE010000000CFA11000C /* PinnedLetterChipsBar.swift in Sources */,
+				DD00EE010000000DFA11000D /* ExportSheet.swift in Sources */,
+				DD00EE010000000EFA11000E /* WeeklyRecapCard.swift in Sources */,
+				DD00EE010000000FFA11000F /* StatsView.swift in Sources */,
+				DD00EE0100000010FA110010 /* ListeningBehaviorView.swift in Sources */,
+				DD00EE0100000011FA110011 /* LibraryIntelligenceView.swift in Sources */,
+				DD00EE0100000012FA110012 /* DiscoveryEngineView.swift in Sources */,
+				DD00EE0100000013FA110013 /* DJToolsView.swift in Sources */,
+				FF22AA0100000001BB330001 /* GenreBrowserView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

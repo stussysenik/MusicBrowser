@@ -48,6 +48,22 @@ final class AnalysisService {
         return nil
     }
 
+    /// Refreshes the in-memory cache for a specific song after ML analysis writes new fields.
+    func refreshCache(for songID: String) {
+        guard let ctx = modelContext else { return }
+        let predicate = #Predicate<SongAnalysis> { $0.songID == songID }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        if let updated = try? ctx.fetch(descriptor).first {
+            cache[songID] = updated
+        }
+    }
+
+    /// Returns all cached analyses for bulk operations.
+    func allCachedAnalyses() -> [SongAnalysis] {
+        Array(cache.values)
+    }
+
     // MARK: - Batch Analysis
 
     func analyzeBatch(_ songs: [Song]) async {

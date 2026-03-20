@@ -5,14 +5,15 @@ struct LibraryPlaylistsView: View {
     let isActive: Bool
 
     @Environment(MusicService.self) private var musicService
+    @Environment(FilterPresetService.self) private var presetService
 
     @State private var playlists: [Playlist] = []
     @State private var isLoading = true
     @State private var hasMore = true
     @State private var loadError: Error?
     @State private var loadTask: Task<Void, Never>?
-    @State private var sortOption: PlaylistSortOption = .name
-    @State private var sortDirection: SortDirection = .ascending
+    @AppStorage("playlists.sortOption") private var sortOption: PlaylistSortOption = .name
+    @AppStorage("playlists.sortDirection") private var sortDirection: SortDirection = .ascending
     @State private var sectionCache: [(String, [Playlist])] = []
     @State private var showCreatePlaylist = false
     @State private var newPlaylistName = ""
@@ -65,51 +66,69 @@ struct LibraryPlaylistsView: View {
                 ContentUnavailableView("No Playlists", systemImage: "music.note.list")
             } else {
                 ScrollViewReader { proxy in
-                    HStack(spacing: 0) {
-                        List {
-                            ForEach(sectionCache, id: \.0) { letter, groupedPlaylists in
-                                Section(letter) {
-                                    ForEach(groupedPlaylists) { playlist in
-                                        NavigationLink(value: playlist) {
-                                            HStack(spacing: 12) {
-                                                ArtworkView(artwork: playlist.artwork, size: 56)
+                    VStack(spacing: 0) {
+                        if presetService.hasPinnedLetters(for: .playlists) {
+                            PinnedLetterChipsBar(
+                                pinnedLetters: presetService.pinnedLettersSet(for: .playlists),
+                                onUnpin: { letter in
+                                    withAnimation { presetService.unpinLetter(letter, for: .playlists) }
+                                },
+                                onClearAll: {
+                                    withAnimation { presetService.clearPinnedLetters(for: .playlists) }
+                                }
+                            )
+                        }
 
-                                                VStack(alignment: .leading, spacing: 2) {
-                                                    Text(playlist.name)
-                                                        .lineLimit(1)
-                                                    if let curator = playlist.curatorName {
-                                                        Text(curator)
-                                                            .font(.caption)
-                                                            .foregroundStyle(.secondary)
+                        HStack(spacing: 0) {
+                            List {
+                                ForEach(sectionCache, id: \.0) { letter, groupedPlaylists in
+                                    Section(letter) {
+                                        ForEach(groupedPlaylists) { playlist in
+                                            NavigationLink(value: playlist) {
+                                                HStack(spacing: 12) {
+                                                    ArtworkView(artwork: playlist.artwork, size: 56)
+
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(playlist.name)
                                                             .lineLimit(1)
+                                                        if let curator = playlist.curatorName {
+                                                            Text(curator)
+                                                                .font(.caption)
+                                                                .foregroundStyle(.secondary)
+                                                                .lineLimit(1)
+                                                        }
                                                     }
                                                 }
                                             }
+                                            .id(playlist.id.rawValue)
                                         }
-                                        .id(playlist.id.rawValue)
                                     }
+                                    .id(letter)
                                 }
-                                .id(letter)
-                            }
 
-                            if hasMore {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity)
-                                    .listRowSeparator(.hidden)
-                                    .symbolEffect(.pulse, options: .repeating)
-                                    .task { await loadMore() }
+                                if hasMore {
+                                    ProgressView()
+                                        .frame(maxWidth: .infinity)
+                                        .listRowSeparator(.hidden)
+                                        .symbolEffect(.pulse, options: .repeating)
+                                        .task { await loadMore() }
+                                }
                             }
+                            .listStyle(.plain)
+
+                            SectionIndexRail(
+                                availableLetters: Set(letters),
+                                pinnedLetters: presetService.pinnedLettersSet(for: .playlists),
+                                onScrollTo: { letter in
+                                    withAnimation(.snappy(duration: 0.2)) {
+                                        proxy.scrollTo(letter, anchor: .top)
+                                    }
+                                },
+                                onDoubleTap: { letter in
+                                    withAnimation { presetService.togglePinnedLetter(letter, for: .playlists) }
+                                }
+                            )
                         }
-                        .listStyle(.plain)
-
-                        SectionIndexRail(
-                            availableLetters: Set(letters),
-                            onScrollTo: { letter in
-                                withAnimation(.snappy(duration: 0.2)) {
-                                    proxy.scrollTo(letter, anchor: .top)
-                                }
-                            }
-                        )
                     }
                 }
             }
@@ -184,12 +203,26 @@ struct LibraryPlaylistsView: View {
                 rebuildSections()
             }
         }
+        .onChange(of: presetService.pinnedLetters) { old, new in
+            let oldSet = old[.playlists] ?? []
+            let newSet = new[.playlists] ?? []
+            if oldSet != newSet { rebuildSections() }
+        }
         .animation(.snappy(duration: 0.2), value: sectionCache.count)
     }
 
     private func rebuildSections() {
         let base = displayPlaylists
-        let grouped = Dictionary(grouping: base) { firstLetter(for: $0.name) }
+
+        let pinned = presetService.pinnedLettersSet(for: .playlists)
+        let filtered: [Playlist]
+        if pinned.isEmpty {
+            filtered = base
+        } else {
+            filtered = base.filter { pinned.contains(firstLetter(for: $0.name)) }
+        }
+
+        let grouped = Dictionary(grouping: filtered) { firstLetter(for: $0.name) }
         sectionCache = grouped.sorted { a, b in
             if a.key == "#" { return false }
             if b.key == "#" { return true }

@@ -5,20 +5,33 @@ struct LibraryArtistsView: View {
     let isActive: Bool
 
     @Environment(MusicService.self) private var musicService
+    @Environment(FilterPresetService.self) private var presetService
 
     @State private var artists: [Artist] = []
     @State private var isLoading = true
     @State private var hasMore = true
     @State private var loadError: Error?
     @State private var loadTask: Task<Void, Never>?
-    @State private var sortDirection: SortDirection = .ascending
+    @AppStorage("artists.sortDirection") private var sortDirection: SortDirection = .ascending
 
     // Pre-computed section cache
     @State private var sectionCache: [(String, [Artist])] = []
     @State private var letterCache: [String] = []
 
     private func rebuildSections() {
-        let grouped = Dictionary(grouping: artists) { artist -> String in
+        let source: [Artist]
+        let pinned = presetService.pinnedLettersSet(for: .artists)
+        if pinned.isEmpty {
+            source = artists
+        } else {
+            source = artists.filter { artist in
+                let first = artist.name.prefix(1).uppercased()
+                let letter = first.rangeOfCharacter(from: .letters) != nil ? first : "#"
+                return pinned.contains(letter)
+            }
+        }
+
+        let grouped = Dictionary(grouping: source) { artist -> String in
             let first = artist.name.prefix(1).uppercased()
             return first.rangeOfCharacter(from: .letters) != nil ? first : "#"
         }
@@ -27,7 +40,10 @@ struct LibraryArtistsView: View {
             if b.key == "#" { return sortDirection.isAscending }
             return sortDirection.isAscending ? a.key < b.key : a.key > b.key
         }
-        letterCache = sectionCache.map(\.0)
+        letterCache = Dictionary(grouping: artists) { artist -> String in
+            let first = artist.name.prefix(1).uppercased()
+            return first.rangeOfCharacter(from: .letters) != nil ? first : "#"
+        }.keys.sorted()
     }
 
     var body: some View {
@@ -74,21 +90,44 @@ struct LibraryArtistsView: View {
             }
         }
         .task { await loadArtists() }
+        .onChange(of: presetService.pinnedLetters) { old, new in
+            let oldSet = old[.artists] ?? []
+            let newSet = new[.artists] ?? []
+            if oldSet != newSet { rebuildSections() }
+        }
     }
 
     private var artistListContent: some View {
         ScrollViewReader { proxy in
-            HStack(spacing: 0) {
-                artistList
-
-                SectionIndexRail(
-                    availableLetters: Set(letterCache),
-                    onScrollTo: { letter in
-                        withAnimation(.snappy(duration: 0.2)) {
-                            proxy.scrollTo(letter, anchor: .top)
+            VStack(spacing: 0) {
+                if presetService.hasPinnedLetters(for: .artists) {
+                    PinnedLetterChipsBar(
+                        pinnedLetters: presetService.pinnedLettersSet(for: .artists),
+                        onUnpin: { letter in
+                            withAnimation { presetService.unpinLetter(letter, for: .artists) }
+                        },
+                        onClearAll: {
+                            withAnimation { presetService.clearPinnedLetters(for: .artists) }
                         }
-                    }
-                )
+                    )
+                }
+
+                HStack(spacing: 0) {
+                    artistList
+
+                    SectionIndexRail(
+                        availableLetters: Set(letterCache),
+                        pinnedLetters: presetService.pinnedLettersSet(for: .artists),
+                        onScrollTo: { letter in
+                            withAnimation(.snappy(duration: 0.2)) {
+                                proxy.scrollTo(letter, anchor: .top)
+                            }
+                        },
+                        onDoubleTap: { letter in
+                            withAnimation { presetService.togglePinnedLetter(letter, for: .artists) }
+                        }
+                    )
+                }
             }
         }
     }

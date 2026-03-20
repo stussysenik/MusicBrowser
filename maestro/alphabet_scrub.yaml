@@ -1,0 +1,17 @@
+appId: com.musicbrowser.app
+---
+- launchApp:
+    arguments:
+      - "-useMockData"
+- assertVisible: "Library"
+- tapOn: "Songs"
+# Swipe on the alphabet rail area (right edge)
+- swipe:
+    direction: DOWN
+    from:
+      percentX: 95
+      percentY: 20
+    to:
+      percentX: 95
+      percentY: 80
+    duration: 1000

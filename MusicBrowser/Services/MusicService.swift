@@ -170,6 +170,42 @@ final class MusicService {
         return all
     }
 
+    // MARK: - Public All Songs Access
+
+    func allLibrarySongs() async throws -> [Song] {
+        try await fetchAllLibrarySongs()
+    }
+
+    // MARK: - All Library Albums (cached)
+
+    private var allLibraryAlbumsCache: [Album] = []
+    private var allAlbumsCacheTime: Date?
+
+    func allLibraryAlbums() async throws -> [Album] {
+        if let time = allAlbumsCacheTime, !allLibraryAlbumsCache.isEmpty,
+           Date().timeIntervalSince(time) < allSongsCacheTTL {
+            return allLibraryAlbumsCache
+        }
+        var all: [Album] = []
+        var offset = 0
+        while true {
+            let response = try await libraryAlbums(offset: offset)
+            all.append(contentsOf: response.items)
+            if response.items.count < 100 { break }
+            offset += 100
+        }
+        allLibraryAlbumsCache = all
+        allAlbumsCacheTime = Date()
+        return all
+    }
+
+    func librarySongs(byIDs ids: [String]) async throws -> [Song] {
+        var request = MusicLibraryRequest<Song>()
+        request.filter(matching: \.id, memberOf: ids.map { MusicItemID($0) })
+        let response = try await request.response()
+        return Array(response.items)
+    }
+
     // MARK: - Library Songs
 
     func librarySongs(
@@ -338,6 +374,14 @@ final class MusicService {
 
     func addSongToPlaylist(_ song: Song, playlist: Playlist) async throws {
         try await MusicLibrary.shared.add(song, to: playlist)
+    }
+
+    func addToLibrary(_ song: Song) async throws {
+        try await MusicLibrary.shared.add(song)
+    }
+
+    func addToLibrary(_ album: Album) async throws {
+        try await MusicLibrary.shared.add(album)
     }
 
     func fetchUserPlaylists() async throws -> [Playlist] {

@@ -30,6 +30,15 @@ final class PlayerService {
 
     var upcomingEntries: [ApplicationMusicPlayer.Queue.Entry] { upcomingCache }
 
+    // MARK: - Session Callbacks (zero-dependency hooks for StatsService)
+
+    /// Called when a new song starts playing. Parameters: songID, title, artistName, albumTitle, genreNames, duration, releaseYear
+    var onSongStarted: ((MusicItemID, String, String, String?, [String], TimeInterval?, Int?) -> Void)?
+    /// Called when the current song ends or changes. Parameters: songID, completedFully
+    var onSongEnded: ((MusicItemID, Bool) -> Void)?
+
+    private var previousSongID: MusicItemID?
+
     // MARK: - Init
 
     init() {
@@ -97,9 +106,27 @@ final class PlayerService {
                 currentDuration = song.duration ?? 0
                 currentSongID = song.id
                 hasLyrics = song.hasLyrics
+
+                // Fire session callbacks when song changes
+                if song.id != previousSongID {
+                    // End previous session
+                    if let prevID = previousSongID {
+                        let completed = playbackTime > 0 && currentDuration > 0 && (playbackTime / currentDuration > 0.9)
+                        onSongEnded?(prevID, completed)
+                    }
+                    // Start new session
+                    let year = song.releaseDate?.year
+                    onSongStarted?(song.id, song.title, song.artistName, song.albumTitle, song.genreNames, song.duration, year)
+                    previousSongID = song.id
+                }
             default:
                 // Fallback to MPNowPlayingInfoCenter
                 readDurationFromNowPlaying()
+                // End previous session if switching to non-song
+                if let prevID = previousSongID {
+                    onSongEnded?(prevID, false)
+                    previousSongID = nil
+                }
                 currentSongID = nil
                 hasLyrics = false
             }
@@ -177,10 +204,19 @@ final class PlayerService {
     }
 
     func playSongs(_ songs: [Song], startingAt index: Int = 0) async throws {
+        guard !songs.isEmpty else { return }
+        let safeIndex = min(index, songs.count - 1)
         musicPlayer.queue = ApplicationMusicPlayer.Queue(
             for: songs,
-            startingAt: songs[index]
+            startingAt: songs[safeIndex]
         )
+        try await musicPlayer.play()
+    }
+
+    func playSongsShuffled(_ songs: [Song]) async throws {
+        guard !songs.isEmpty else { return }
+        musicPlayer.state.shuffleMode = .songs
+        musicPlayer.queue = ApplicationMusicPlayer.Queue(for: songs)
         try await musicPlayer.play()
     }
 
@@ -195,9 +231,11 @@ final class PlayerService {
     }
 
     func playTracks(_ tracks: MusicItemCollection<Track>, startingAt index: Int = 0) async throws {
+        guard !tracks.isEmpty else { return }
+        let safeIndex = min(index, tracks.count - 1)
         musicPlayer.queue = ApplicationMusicPlayer.Queue(
             for: tracks,
-            startingAt: tracks[tracks.index(tracks.startIndex, offsetBy: index)]
+            startingAt: tracks[tracks.index(tracks.startIndex, offsetBy: safeIndex)]
         )
         try await musicPlayer.play()
     }
