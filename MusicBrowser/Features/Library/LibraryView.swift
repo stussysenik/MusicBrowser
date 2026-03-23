@@ -4,39 +4,41 @@ import MusicKit
 struct LibraryView: View {
     @Environment(PlayerService.self) private var player
     @Environment(MusicService.self) private var musicService
-    @State private var selection: LibrarySection = .songs
+    @State private var selectedTab = 0
 
-    enum LibrarySection: String, CaseIterable {
-        case songs = "Songs"
-        case albums = "Albums"
-        case playlists = "Playlists"
-        case artists = "Artists"
+    #if DEBUG
+    private var isDemoMode: Bool {
+        ProcessInfo.processInfo.arguments.contains("-demo-mode")
     }
+    #endif
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Section", selection: $selection) {
-                ForEach(LibrarySection.allCases, id: \.self) { section in
-                    Text(section.rawValue).tag(section)
-                }
+            Picker("View", selection: $selectedTab) {
+                Text("Songs").tag(0)
+                Text("Albums").tag(1)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
 
-            ZStack {
-                LibrarySongsView(isActive: selection == .songs)
-                    .opacity(selection == .songs ? 1 : 0)
-                    .allowsHitTesting(selection == .songs)
-                LibraryAlbumsView(isActive: selection == .albums)
-                    .opacity(selection == .albums ? 1 : 0)
-                    .allowsHitTesting(selection == .albums)
-                LibraryPlaylistsView(isActive: selection == .playlists)
-                    .opacity(selection == .playlists ? 1 : 0)
-                    .allowsHitTesting(selection == .playlists)
-                LibraryArtistsView(isActive: selection == .artists)
-                    .opacity(selection == .artists ? 1 : 0)
-                    .allowsHitTesting(selection == .artists)
+            Group {
+                switch selectedTab {
+                case 0:
+                    #if DEBUG
+                    if isDemoMode {
+                        DemoLibrarySongsView()
+                    } else {
+                        LibrarySongsView()
+                    }
+                    #else
+                    LibrarySongsView()
+                    #endif
+                case 1:
+                    LibraryAlbumsView()
+                default:
+                    LibrarySongsView()
+                }
             }
         }
         .navigationTitle("Library")

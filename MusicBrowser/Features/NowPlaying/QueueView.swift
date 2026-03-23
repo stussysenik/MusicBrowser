@@ -46,17 +46,7 @@ struct QueueView: View {
     @ViewBuilder
     private func queueRow(_ entry: ApplicationMusicPlayer.Queue.Entry, isCurrent: Bool) -> some View {
         HStack(spacing: 12) {
-            if let artwork = entry.artwork {
-                ArtworkView(artwork: artwork, size: 44)
-            } else {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(.quaternary)
-                    .frame(width: 44, height: 44)
-                    .overlay {
-                        Image(systemName: "music.note")
-                            .foregroundStyle(.tertiary)
-                    }
-            }
+            ArtworkView(artwork: entry.artwork, size: 44)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.title ?? "Unknown")

@@ -9,6 +9,8 @@ final class SongAnalysis {
 
     // Analysis results
     var bpm: Double?
+    var bpmSource: String?
+    var bpmConfidence: Double?
     var musicalKey: String?
     var keyConfidence: Double?
     var analysisDate: Date?
@@ -18,6 +20,6 @@ final class SongAnalysis {
         self.songID = songID
         self.title = title
         self.artistName = artistName
-        self.analysisVersion = 1
+        self.analysisVersion = 2
     }
 }

@@ -32,7 +32,6 @@ struct SongDetailView: View {
                 }
                 metadataGrid
                 annotationSection
-                lyricsIndicator
             }
             .padding()
         }
@@ -48,22 +47,8 @@ struct SongDetailView: View {
     // MARK: - Artwork
 
     private var artworkSection: some View {
-        Group {
-            if let art = song.artwork {
-                ArtworkImage(art, width: 280, height: 280)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
-            } else {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.quaternary)
-                    .frame(width: 280, height: 280)
-                    .overlay {
-                        Image(systemName: "music.note")
-                            .font(.system(size: 64))
-                            .foregroundStyle(.tertiary)
-                    }
-            }
-        }
+        ArtworkView(artwork: song.artwork, size: 280)
+            .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
     }
 
     // MARK: - Title
@@ -364,31 +349,6 @@ struct SongDetailView: View {
         }
     }
 
-    // MARK: - Lyrics Indicator
-
-    @ViewBuilder
-    private var lyricsIndicator: some View {
-        if song.hasLyrics {
-            HStack(spacing: 8) {
-                Image(systemName: "text.quote")
-                    .foregroundStyle(.secondary)
-                Text("Lyrics Available")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if let lyricsURL = URL(string: "music://music.apple.com/song/\(song.id.rawValue)") {
-                    Link(destination: lyricsURL) {
-                        Label("Open in Apple Music", systemImage: "arrow.up.right")
-                            .font(.caption)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-            }
-            .padding(12)
-            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
-        }
-    }
 }
 
 #Preview("Song Detail") {

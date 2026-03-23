@@ -22,6 +22,28 @@ final class MusicService {
 
     var isAuthorized = false
 
+    // MARK: - Subscription Cache
+
+    private var subscriptionStatus: MusicSubscription?
+    private var subscriptionCheckTime: Date?
+    private let subscriptionCacheTTL: TimeInterval = 300
+
+    private func cachedSubscription() async throws -> MusicSubscription {
+        if let cached = subscriptionStatus,
+           let time = subscriptionCheckTime,
+           Date().timeIntervalSince(time) < subscriptionCacheTTL {
+            return cached
+        }
+        let sub = try await MusicSubscription.current
+        subscriptionStatus = sub
+        subscriptionCheckTime = Date()
+        return sub
+    }
+
+    func prefetchSubscriptionStatus() async {
+        _ = try? await cachedSubscription()
+    }
+
     // MARK: - Cache
 
     private var chartsCache: MusicCatalogChartsResponse?
@@ -92,7 +114,7 @@ final class MusicService {
     }
 
     private func searchCatalog(term: String) async throws -> SearchResults {
-        let subscription = try await MusicSubscription.current
+        let subscription = try await cachedSubscription()
         guard subscription.canPlayCatalogContent else {
             throw SearchError.catalogUnavailable
         }
@@ -199,6 +221,24 @@ final class MusicService {
             request.sort(by: \.title, ascending: true)
         }
         return try await request.response()
+    }
+
+    // MARK: - Single Song Lookup
+
+    func librarySong(byID songID: String) async throws -> Song? {
+        var request = MusicLibraryRequest<Song>()
+        request.filter(matching: \.id, equalTo: MusicItemID(songID))
+        request.limit = 1
+        return try await request.response().items.first
+    }
+
+    // MARK: - Single Album Lookup
+
+    func libraryAlbum(byID albumID: String) async throws -> Album? {
+        var request = MusicLibraryRequest<Album>()
+        request.filter(matching: \.id, equalTo: MusicItemID(albumID))
+        request.limit = 1
+        return try await request.response().items.first
     }
 
     // MARK: - Library Albums

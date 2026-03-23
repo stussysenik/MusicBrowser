@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB00000100000001CD33EE01 /* AlbumAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB00000200000001CD33EE01 /* AlbumAnnotation.swift */; };
+		CC00000100000001DD44FF01 /* LibraryAlbumsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00000200000001DD44FF01 /* LibraryAlbumsView.swift */; };
+		EE00000100000001FF22AA01 /* NotesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE00000200000001FF22AA01 /* NotesView.swift */; };
+		DD00000100000001EE11FF01 /* BPMDetectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000200000001EE11FF01 /* BPMDetectionEngine.swift */; };
+		DD00000100000002EE11FF02 /* AudioBufferProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000200000002EE11FF02 /* AudioBufferProvider.swift */; };
+		DD00000100000003EE11FF03 /* BPMDetectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000200000003EE11FF03 /* BPMDetectionService.swift */; };
+		DD00000100000004EE11FF04 /* BPMBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000200000004EE11FF04 /* BPMBadgeView.swift */; };
+		DD00000100000005EE11FF05 /* BeatPulseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000200000005EE11FF05 /* BeatPulseView.swift */; };
+		DD00000100000006EE11FF06 /* LiveBPMView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD00000200000006EE11FF06 /* LiveBPMView.swift */; };
 		02DEEFD52F54EE3900CF6881 /* PreviewHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02DEEFD42F54EE3900CF6881 /* PreviewHost.swift */; };
 		0D49EE5A7E5BACA94A20B502 /* ArtistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 062C7A1D1F3EA79722E36546 /* ArtistDetailView.swift */; };
 		14965F5A05A30844C6C977CA /* MiniPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE96A0D1623B7BE3CC98EE89 /* MiniPlayerView.swift */; };
@@ -19,15 +28,12 @@
 		21160BA22F5DBD37005BC9CB /* FilterableProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21160BA12F5DBD37005BC9CB /* FilterableProtocols.swift */; };
 		BB00000100000001CC11AA01 /* SectionIndexRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000200000001CC11AA01 /* SectionIndexRail.swift */; };
 		BB00000100000002CC11AA02 /* AddToPlaylistSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00000200000002CC11AA02 /* AddToPlaylistSheet.swift */; };
-		21160BAE2F5DBDC8005BC9CB /* FilterPresetService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21160BAD2F5DBDC8005BC9CB /* FilterPresetService.swift */; };
 		21160BB22F5DBE85005BC9CB /* MusicKitExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21160BB12F5DBE85005BC9CB /* MusicKitExtensions.swift */; };
 		284FF8F4C76B030463E8077F /* AlbumCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A7CD5075E7F69A482EC6E17 /* AlbumCard.swift */; };
-		3AFA95A87F356B5DB07A4A64 /* LibraryPlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D9DB0283A5E99269EC19B82 /* LibraryPlaylistsView.swift */; };
 		3C088DDF154F8F460891419C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E15922190C6FD45DE4F790C1 /* ContentView.swift */; };
 		57392B94A9EED2EB468FA368 /* ArtworkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E69CDC422073D83BC8C3C04 /* ArtworkView.swift */; };
 		634958A03E7876647323998D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02FE8C2A85C1EC40DFC3441E /* Assets.xcassets */; };
 		6CCBEBCE699862683E5D06CF /* TrackRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 634D55DBC5EC53CBDEEFBCF3 /* TrackRow.swift */; };
-		7AE748A300800385DDA7D4EA /* LibraryArtistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E6BE7B030C54290648B7BB /* LibraryArtistsView.swift */; };
 		86155EB1424CE1CDDD5A7CD0 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DEDECD1FD65EAFD5DB667A7 /* LibraryView.swift */; };
 		914189A693C6F67F190306AD /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 773DFB0E1078BA08B869DA81 /* BrowseView.swift */; };
 		9D4F405429F0F31219B8D77E /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26DF4291F07345C5F7F37743 /* NowPlayingView.swift */; };
@@ -37,11 +43,11 @@
 		C2C0CBBF4F2FB2155A239748 /* LibrarySortOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B811594BF941C40B4F3E52FD /* LibrarySortOptions.swift */; };
 		D2953C524B81857CFB36EC9C /* PlaylistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F57FD4985B262794C582B81A /* PlaylistDetailView.swift */; };
 		D3143B31C87E15F8833D088B /* LibrarySongsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4159ED3FA5D14A4A30844C4 /* LibrarySongsView.swift */; };
-		D56318800304AD7CA1699FDA /* LibraryAlbumsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E47BF7E0F911B75CC0307A /* LibraryAlbumsView.swift */; };
 		CC11AA0100000001DD00EE01 /* SongAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11AA0200000001DD00EE01 /* SongAnnotation.swift */; };
 		CC11AA0100000002DD00EE02 /* AnnotationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11AA0200000002DD00EE02 /* AnnotationService.swift */; };
 		CC11AA0100000003DD00EE03 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC11AA0200000003DD00EE03 /* FlowLayout.swift */; };
 		DA4B77E40E7E71AFB51C8EEB /* SongAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9857777AF90063C2C1D248 /* SongAnalysis.swift */; };
+		DD11BB0100000004EE00FF04 /* MusicBrowserMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD11BB0200000004EE00FF04 /* MusicBrowserMigration.swift */; };
 		DC53127DBF14B8E6C62A6FCC /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D9A9BA822C5D4D34385EBF6 /* SearchView.swift */; };
 		E6D95A0699D9CE42663618FC /* MusicService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67237535E6BEE92602856B53 /* MusicService.swift */; };
 		E7DAAD8335929D8E3F54872E /* MusicBrowserApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA8E136B59F15E142B55905 /* MusicBrowserApp.swift */; };
@@ -50,15 +56,15 @@
 		AA00000100000001AABBCC01 /* ShimmerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000001AABBCC01 /* ShimmerView.swift */; };
 		AA00000100000002AABBCC02 /* PressableStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000002AABBCC02 /* PressableStyle.swift */; };
 		AA00000100000003AABBCC03 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000003AABBCC03 /* HapticEngine.swift */; };
-		AA00000100000004AABBCC04 /* LyricsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000004AABBCC04 /* LyricsService.swift */; };
-		AA00000100000005AABBCC05 /* LyricsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000200000005AABBCC05 /* LyricsView.swift */; };
+		FF00000100000001AA11BB01 /* DemoSongData.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF00000200000001AA11BB01 /* DemoSongData.swift */; };
+		FF00000100000002AA11BB02 /* DemoLibrarySongsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF00000200000002AA11BB02 /* DemoLibrarySongsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AB00000200000001CD33EE01 /* AlbumAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumAnnotation.swift; sourceTree = "<group>"; };
 		011C6F35FE2F9C2889EF72AB /* AnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisService.swift; sourceTree = "<group>"; };
 		02DEEFD42F54EE3900CF6881 /* PreviewHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHost.swift; sourceTree = "<group>"; };
 		02FE8C2A85C1EC40DFC3441E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		03E47BF7E0F911B75CC0307A /* LibraryAlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAlbumsView.swift; sourceTree = "<group>"; };
 		062C7A1D1F3EA79722E36546 /* ArtistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtistDetailView.swift; sourceTree = "<group>"; };
 		08639D6321F849D66659431F /* MusicBrowser.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MusicBrowser.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1BA8E136B59F15E142B55905 /* MusicBrowserApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicBrowserApp.swift; sourceTree = "<group>"; };
@@ -69,7 +75,6 @@
 		21160BA12F5DBD37005BC9CB /* FilterableProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterableProtocols.swift; sourceTree = "<group>"; };
 		BB00000200000001CC11AA01 /* SectionIndexRail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionIndexRail.swift; sourceTree = "<group>"; };
 		BB00000200000002CC11AA02 /* AddToPlaylistSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToPlaylistSheet.swift; sourceTree = "<group>"; };
-		21160BAD2F5DBDC8005BC9CB /* FilterPresetService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterPresetService.swift; sourceTree = "<group>"; };
 		21160BB12F5DBE85005BC9CB /* MusicKitExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicKitExtensions.swift; sourceTree = "<group>"; };
 		26DF4291F07345C5F7F37743 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		3DEDECD1FD65EAFD5DB667A7 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
@@ -81,36 +86,43 @@
 		773DFB0E1078BA08B869DA81 /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
 		7E69CDC422073D83BC8C3C04 /* ArtworkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkView.swift; sourceTree = "<group>"; };
 		8A7CD5075E7F69A482EC6E17 /* AlbumCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumCard.swift; sourceTree = "<group>"; };
-		8D9DB0283A5E99269EC19B82 /* LibraryPlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryPlaylistsView.swift; sourceTree = "<group>"; };
 		9378008DFD08F41E843A1812 /* AuthorizationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthorizationView.swift; sourceTree = "<group>"; };
 		9D8DAE5EF7D419BEC148506A /* AlbumDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumDetailView.swift; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5D /* SongDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongDetailView.swift; sourceTree = "<group>"; };
 		B811594BF941C40B4F3E52FD /* LibrarySortOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySortOptions.swift; sourceTree = "<group>"; };
 		BB9857777AF90063C2C1D248 /* SongAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongAnalysis.swift; sourceTree = "<group>"; };
 		CC11AA0200000001DD00EE01 /* SongAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongAnnotation.swift; sourceTree = "<group>"; };
+		DD11BB0200000004EE00FF04 /* MusicBrowserMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicBrowserMigration.swift; sourceTree = "<group>"; };
 		CC11AA0200000002DD00EE02 /* AnnotationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationService.swift; sourceTree = "<group>"; };
 		CC11AA0200000003DD00EE03 /* FlowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowLayout.swift; sourceTree = "<group>"; };
 		BC1731EAED27FD4F17C2A855 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		BE96A0D1623B7BE3CC98EE89 /* MiniPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerView.swift; sourceTree = "<group>"; };
 		D4159ED3FA5D14A4A30844C4 /* LibrarySongsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySongsView.swift; sourceTree = "<group>"; };
-		D7E6BE7B030C54290648B7BB /* LibraryArtistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryArtistsView.swift; sourceTree = "<group>"; };
 		E15922190C6FD45DE4F790C1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EFDE4862EFE4168995B08B17 /* QueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueView.swift; sourceTree = "<group>"; };
 		F57FD4985B262794C582B81A /* PlaylistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailView.swift; sourceTree = "<group>"; };
 		AA00000200000001AABBCC01 /* ShimmerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerView.swift; sourceTree = "<group>"; };
 		AA00000200000002AABBCC02 /* PressableStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PressableStyle.swift; sourceTree = "<group>"; };
 		AA00000200000003AABBCC03 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
-		AA00000200000004AABBCC04 /* LyricsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsService.swift; sourceTree = "<group>"; };
-		AA00000200000005AABBCC05 /* LyricsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LyricsView.swift; sourceTree = "<group>"; };
+		DD00000200000001EE11FF01 /* BPMDetectionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPMDetectionEngine.swift; sourceTree = "<group>"; };
+		DD00000200000002EE11FF02 /* AudioBufferProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBufferProvider.swift; sourceTree = "<group>"; };
+		DD00000200000003EE11FF03 /* BPMDetectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPMDetectionService.swift; sourceTree = "<group>"; };
+		DD00000200000004EE11FF04 /* BPMBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BPMBadgeView.swift; sourceTree = "<group>"; };
+		DD00000200000005EE11FF05 /* BeatPulseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatPulseView.swift; sourceTree = "<group>"; };
+		DD00000200000006EE11FF06 /* LiveBPMView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveBPMView.swift; sourceTree = "<group>"; };
+		EE00000200000001FF22AA01 /* NotesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotesView.swift; sourceTree = "<group>"; };
+		FF00000200000001AA11BB01 /* DemoSongData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoSongData.swift; sourceTree = "<group>"; };
+		FF00000200000002AA11BB02 /* DemoLibrarySongsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoLibrarySongsView.swift; sourceTree = "<group>"; };
+		CC00000200000001DD44FF01 /* LibraryAlbumsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAlbumsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		0067219349A19A2F852706EF /* Library */ = {
 			isa = PBXGroup;
 			children = (
-				03E47BF7E0F911B75CC0307A /* LibraryAlbumsView.swift */,
-				D7E6BE7B030C54290648B7BB /* LibraryArtistsView.swift */,
-				8D9DB0283A5E99269EC19B82 /* LibraryPlaylistsView.swift */,
+				FF00000200000002AA11BB02 /* DemoLibrarySongsView.swift */,
+				FF00000200000001AA11BB01 /* DemoSongData.swift */,
+				CC00000200000001DD44FF01 /* LibraryAlbumsView.swift */,
 				D4159ED3FA5D14A4A30844C4 /* LibrarySongsView.swift */,
 				3DEDECD1FD65EAFD5DB667A7 /* LibraryView.swift */,
 				A1B2C3D4E5F60718293A4B5D /* SongDetailView.swift */,
@@ -131,7 +143,6 @@
 		10396E9328CDB7004CE66E96 /* NowPlaying */ = {
 			isa = PBXGroup;
 			children = (
-				AA00000200000005AABBCC05 /* LyricsView.swift */,
 				BE96A0D1623B7BE3CC98EE89 /* MiniPlayerView.swift */,
 				26DF4291F07345C5F7F37743 /* NowPlayingView.swift */,
 				EFDE4862EFE4168995B08B17 /* QueueView.swift */,
@@ -146,6 +157,14 @@
 				21160BB12F5DBE85005BC9CB /* MusicKitExtensions.swift */,
 			);
 			path = Search;
+			sourceTree = "<group>";
+		};
+		EE00000300000001FF22AA01 /* Notes */ = {
+			isa = PBXGroup;
+			children = (
+				EE00000200000001FF22AA01 /* NotesView.swift */,
+			);
+			path = Notes;
 			sourceTree = "<group>";
 		};
 		18890DF6032E4DC6CF13DDD2 /* MusicBrowser */ = {
@@ -195,6 +214,8 @@
 			children = (
 				8A7CD5075E7F69A482EC6E17 /* AlbumCard.swift */,
 				7E69CDC422073D83BC8C3C04 /* ArtworkView.swift */,
+				DD00000200000005EE11FF05 /* BeatPulseView.swift */,
+				DD00000200000004EE11FF04 /* BPMBadgeView.swift */,
 				603CBA7A9DFF18B07782A253 /* Extensions.swift */,
 				B811594BF941C40B4F3E52FD /* LibrarySortOptions.swift */,
 				634D55DBC5EC53CBDEEFBCF3 /* TrackRow.swift */,
@@ -206,7 +227,7 @@
 				BB00000200000002CC11AA02 /* AddToPlaylistSheet.swift */,
 				BB00000200000001CC11AA01 /* SectionIndexRail.swift */,
 				CC11AA0200000003DD00EE03 /* FlowLayout.swift */,
-				21160BAD2F5DBDC8005BC9CB /* FilterPresetService.swift */,
+				DD00000200000006EE11FF06 /* LiveBPMView.swift */,
 				AA00000200000003AABBCC03 /* HapticEngine.swift */,
 				AA00000200000002AABBCC02 /* PressableStyle.swift */,
 				AA00000200000001AABBCC01 /* ShimmerView.swift */,
@@ -217,6 +238,8 @@
 		A24B95EEF179102DDF8E67BE /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				AB00000200000001CD33EE01 /* AlbumAnnotation.swift */,
+				DD11BB0200000004EE00FF04 /* MusicBrowserMigration.swift */,
 				BB9857777AF90063C2C1D248 /* SongAnalysis.swift */,
 				CC11AA0200000001DD00EE01 /* SongAnnotation.swift */,
 			);
@@ -228,6 +251,7 @@
 			children = (
 				43CFD60B8E56B00EAD289F02 /* Browse */,
 				0067219349A19A2F852706EF /* Library */,
+				EE00000300000001FF22AA01 /* Notes */,
 				10396E9328CDB7004CE66E96 /* NowPlaying */,
 				137CCFB169BD688ECD32FCC7 /* Search */,
 			);
@@ -239,7 +263,9 @@
 			children = (
 				011C6F35FE2F9C2889EF72AB /* AnalysisService.swift */,
 				CC11AA0200000002DD00EE02 /* AnnotationService.swift */,
-				AA00000200000004AABBCC04 /* LyricsService.swift */,
+				DD00000200000002EE11FF02 /* AudioBufferProvider.swift */,
+				DD00000200000001EE11FF01 /* BPMDetectionEngine.swift */,
+				DD00000200000003EE11FF03 /* BPMDetectionService.swift */,
 				67237535E6BEE92602856B53 /* MusicService.swift */,
 				579FD2522F08D377C4D561D9 /* PlayerService.swift */,
 			);
@@ -324,6 +350,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB00000100000001CD33EE01 /* AlbumAnnotation.swift in Sources */,
 				284FF8F4C76B030463E8077F /* AlbumCard.swift in Sources */,
 				1D23D8DB4B4829553313F32C /* AlbumDetailView.swift in Sources */,
 				A7E37ACFA7330AC4D1CBB6AE /* AnalysisService.swift in Sources */,
@@ -335,12 +362,9 @@
 				914189A693C6F67F190306AD /* BrowseView.swift in Sources */,
 				3C088DDF154F8F460891419C /* ContentView.swift in Sources */,
 				F933FDDD13B305091031697D /* Extensions.swift in Sources */,
-				D56318800304AD7CA1699FDA /* LibraryAlbumsView.swift in Sources */,
 				21160B982F5DB565005BC9CB /* AlphabetJumpRail.swift in Sources */,
-				7AE748A300800385DDA7D4EA /* LibraryArtistsView.swift in Sources */,
-				21160BAE2F5DBDC8005BC9CB /* FilterPresetService.swift in Sources */,
-				3AFA95A87F356B5DB07A4A64 /* LibraryPlaylistsView.swift in Sources */,
 				21160B9A2F5DB566005BC9CB /* DiscoverView.swift in Sources */,
+				CC00000100000001DD44FF01 /* LibraryAlbumsView.swift in Sources */,
 				D3143B31C87E15F8833D088B /* LibrarySongsView.swift in Sources */,
 				C2C0CBBF4F2FB2155A239748 /* LibrarySortOptions.swift in Sources */,
 				86155EB1424CE1CDDD5A7CD0 /* LibraryView.swift in Sources */,
@@ -350,6 +374,7 @@
 				E7DAAD8335929D8E3F54872E /* MusicBrowserApp.swift in Sources */,
 				E6D95A0699D9CE42663618FC /* MusicService.swift in Sources */,
 				02DEEFD52F54EE3900CF6881 /* PreviewHost.swift in Sources */,
+				EE00000100000001FF22AA01 /* NotesView.swift in Sources */,
 				9D4F405429F0F31219B8D77E /* NowPlayingView.swift in Sources */,
 				F52814F3922DA5A135BD7F89 /* PlayerService.swift in Sources */,
 				D2953C524B81857CFB36EC9C /* PlaylistDetailView.swift in Sources */,
@@ -359,6 +384,7 @@
 				BB00000100000002CC11AA02 /* AddToPlaylistSheet.swift in Sources */,
 				DA4B77E40E7E71AFB51C8EEB /* SongAnalysis.swift in Sources */,
 				CC11AA0100000001DD00EE01 /* SongAnnotation.swift in Sources */,
+				DD11BB0100000004EE00FF04 /* MusicBrowserMigration.swift in Sources */,
 				CC11AA0100000002DD00EE02 /* AnnotationService.swift in Sources */,
 				CC11AA0100000003DD00EE03 /* FlowLayout.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* SongDetailView.swift in Sources */,
@@ -366,8 +392,14 @@
 				AA00000100000001AABBCC01 /* ShimmerView.swift in Sources */,
 				AA00000100000002AABBCC02 /* PressableStyle.swift in Sources */,
 				AA00000100000003AABBCC03 /* HapticEngine.swift in Sources */,
-				AA00000100000004AABBCC04 /* LyricsService.swift in Sources */,
-				AA00000100000005AABBCC05 /* LyricsView.swift in Sources */,
+				DD00000100000001EE11FF01 /* BPMDetectionEngine.swift in Sources */,
+				DD00000100000002EE11FF02 /* AudioBufferProvider.swift in Sources */,
+				DD00000100000003EE11FF03 /* BPMDetectionService.swift in Sources */,
+				DD00000100000004EE11FF04 /* BPMBadgeView.swift in Sources */,
+				DD00000100000005EE11FF05 /* BeatPulseView.swift in Sources */,
+				DD00000100000006EE11FF06 /* LiveBPMView.swift in Sources */,
+				FF00000100000001AA11BB01 /* DemoSongData.swift in Sources */,
+				FF00000100000002AA11BB02 /* DemoLibrarySongsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

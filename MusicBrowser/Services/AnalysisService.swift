@@ -6,6 +6,7 @@ import MusicKit
 @Observable
 final class AnalysisService {
     private var modelContext: ModelContext?
+    private let bpmDetector = BPMDetectionService()
 
     // MARK: - In-Memory Cache (O(1) lookups)
 
@@ -48,18 +49,45 @@ final class AnalysisService {
         return nil
     }
 
-    // MARK: - Batch Analysis
+    // MARK: - Batch Analysis (metadata-only for speed)
 
     func analyzeBatch(_ songs: [Song]) async {
-        // Skip songs already in cache
+        guard let ctx = modelContext else { return }
         let uncached = songs.filter { cache[$0.id.rawValue] == nil }
         guard !uncached.isEmpty else { return }
+
+        // Batch uses metadata-only: instant MPMediaItem.beatsPerMinute lookup.
+        // Full DSP analysis runs on-demand when a specific song is viewed/played.
         for song in uncached {
-            await analyzeSong(song)
+            let songID = song.id.rawValue
+            #if os(iOS)
+            let item = MediaQueryHelper.findMediaItem(title: song.title, artist: song.artistName)
+            let bpm = item?.beatsPerMinute ?? 0
+            #else
+            let bpm = 0
+            #endif
+
+            let analysis: SongAnalysis
+            if let existing = cache[songID] {
+                analysis = existing
+            } else {
+                analysis = SongAnalysis(songID: songID, title: song.title, artistName: song.artistName)
+                ctx.insert(analysis)
+            }
+
+            if bpm > 0 {
+                analysis.bpm = Double(bpm)
+                analysis.bpmSource = BPMSource.metadata.rawValue
+                analysis.bpmConfidence = 0.5
+            }
+            analysis.analysisDate = Date()
+            analysis.analysisVersion = 2
+            cache[songID] = analysis
         }
+        try? ctx.save()
     }
 
-    // MARK: - Private
+    // MARK: - On-Demand Analysis (full DSP cascade)
 
     @MainActor
     private func analyzeSong(_ song: Song) async {
@@ -67,49 +95,23 @@ final class AnalysisService {
         let songID = song.id.rawValue
 
         // Already analyzed with BPM?
-        if let existing = cache[songID], existing.bpm != nil { return }
+        if let existing = cache[songID], existing.bpm != nil, existing.analysisVersion >= 2 { return }
 
-        // Try to get BPM from MPMediaItem
-        let bpmValue = lookupBPMFromMediaPlayer(title: song.title, artist: song.artistName)
+        let result = await bpmDetector.detectBPM(title: song.title, artist: song.artistName)
 
         let analysis: SongAnalysis
         if let existing = cache[songID] {
             analysis = existing
         } else {
-            analysis = SongAnalysis(
-                songID: songID,
-                title: song.title,
-                artistName: song.artistName
-            )
+            analysis = SongAnalysis(songID: songID, title: song.title, artistName: song.artistName)
             ctx.insert(analysis)
         }
-        analysis.bpm = bpmValue
+        analysis.bpm = result?.bpm
+        analysis.bpmSource = result?.source.rawValue
+        analysis.bpmConfidence = result?.confidence
         analysis.analysisDate = Date()
+        analysis.analysisVersion = 2
         cache[songID] = analysis
         try? ctx.save()
-    }
-
-    private func lookupBPMFromMediaPlayer(title: String, artist: String) -> Double? {
-        #if os(iOS)
-        let query = MPMediaQuery.songs()
-        let titlePredicate = MPMediaPropertyPredicate(
-            value: title,
-            forProperty: MPMediaItemPropertyTitle,
-            comparisonType: .equalTo
-        )
-        let artistPredicate = MPMediaPropertyPredicate(
-            value: artist,
-            forProperty: MPMediaItemPropertyArtist,
-            comparisonType: .equalTo
-        )
-        query.addFilterPredicate(titlePredicate)
-        query.addFilterPredicate(artistPredicate)
-
-        if let item = query.items?.first {
-            let bpm = item.beatsPerMinute
-            return bpm > 0 ? Double(bpm) : nil
-        }
-        #endif
-        return nil
     }
 }

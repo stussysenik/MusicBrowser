@@ -24,6 +24,28 @@ final class AnnotationService {
         return (try? context.fetch(descriptor)) ?? []
     }
 
+    // MARK: - Album Annotations
+
+    func albumAnnotation(for albumID: String, in context: ModelContext) -> AlbumAnnotation? {
+        let predicate = #Predicate<AlbumAnnotation> { $0.albumID == albumID }
+        var descriptor = FetchDescriptor(predicate: predicate)
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    func saveAlbumAnnotation(_ annotation: AlbumAnnotation, in context: ModelContext) {
+        annotation.updatedAt = .now
+        context.insert(annotation)
+        try? context.save()
+    }
+
+    func allAlbumAnnotations(in context: ModelContext) -> [AlbumAnnotation] {
+        let descriptor = FetchDescriptor<AlbumAnnotation>(
+            sortBy: [SortDescriptor(\.updatedAt, order: .reverse)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
     func exportJSON(in context: ModelContext) throws -> Data {
         let annotations = allAnnotations(in: context)
         let payload = annotations.map { ExportEntry(from: $0) }

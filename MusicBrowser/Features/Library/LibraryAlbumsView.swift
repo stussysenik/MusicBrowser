@@ -2,8 +2,6 @@ import SwiftUI
 import MusicKit
 
 struct LibraryAlbumsView: View {
-    let isActive: Bool
-
     @Environment(MusicService.self) private var musicService
 
     @State private var albums: [Album] = []
@@ -50,38 +48,36 @@ struct LibraryAlbumsView: View {
             }
         }
         .toolbar {
-            if isActive {
-                ToolbarItem(placement: .automatic) {
-                    Menu {
-                        Section("Sort By") {
-                            Picker("Sort", selection: $sortOption) {
-                                ForEach(AlbumSortOption.allCases, id: \.self) { option in
-                                    Text(option.rawValue).tag(option)
-                                }
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    Section("Sort By") {
+                        Picker("Sort", selection: $sortOption) {
+                            ForEach(AlbumSortOption.allCases, id: \.self) { option in
+                                Text(option.rawValue).tag(option)
                             }
                         }
-
-                        Section {
-                            Button {
-                                sortDirection.toggle()
-                            } label: {
-                                Label(
-                                    sortDirection.isAscending ? "Ascending" : "Descending",
-                                    systemImage: sortDirection.systemImage
-                                )
-                            }
-                        }
-
-                        Section("Group By") {
-                            Picker("Grouping", selection: $grouping) {
-                                ForEach(AlbumGrouping.allCases, id: \.self) { option in
-                                    Text(option.rawValue).tag(option)
-                                }
-                            }
-                        }
-                    } label: {
-                        Label("View Options", systemImage: "line.3.horizontal.decrease")
                     }
+
+                    Section {
+                        Button {
+                            sortDirection.toggle()
+                        } label: {
+                            Label(
+                                sortDirection.isAscending ? "Ascending" : "Descending",
+                                systemImage: sortDirection.systemImage
+                            )
+                        }
+                    }
+
+                    Section("Group By") {
+                        Picker("Grouping", selection: $grouping) {
+                            ForEach(AlbumGrouping.allCases, id: \.self) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("View Options", systemImage: "line.3.horizontal.decrease")
                 }
             }
         }
@@ -269,7 +265,7 @@ struct LibraryAlbumsView: View {
 #Preview("Library Albums") {
     PreviewHost {
         NavigationStack {
-            LibraryAlbumsView(isActive: true)
+            LibraryAlbumsView()
         }
     }
 }

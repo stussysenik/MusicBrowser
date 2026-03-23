@@ -7,19 +7,38 @@ struct MusicBrowserApp: App {
     @State private var musicService = MusicService()
     @State private var playerService = PlayerService()
     @State private var analysisService = AnalysisService()
-    @State private var presetService = FilterPresetService()
-    @State private var lyricsService = LyricsService()
     @State private var annotationService = AnnotationService()
 
     let container: ModelContainer
 
     init() {
-        let schema = Schema([SongAnalysis.self, SongAnnotation.self])
         let config = ModelConfiguration(cloudKitDatabase: .automatic)
+        let storeURL = config.url
+
         do {
-            container = try ModelContainer(for: schema, configurations: [config])
+            container = try ModelContainer(
+                for: SongAnnotation.self, SongAnalysis.self, AlbumAnnotation.self,
+                migrationPlan: MusicBrowserMigrationPlan.self,
+                configurations: config
+            )
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Destructive fallback — delete corrupt/unmigrateable store and retry
+            print("Store failed to load, resetting: \(error)")
+            try? FileManager.default.removeItem(at: storeURL)
+            for suffix in ["-wal", "-shm"] {
+                try? FileManager.default.removeItem(
+                    at: URL(fileURLWithPath: storeURL.path + suffix)
+                )
+            }
+            do {
+                container = try ModelContainer(
+                    for: SongAnnotation.self, SongAnalysis.self, AlbumAnnotation.self,
+                    migrationPlan: MusicBrowserMigrationPlan.self,
+                    configurations: config
+                )
+            } catch {
+                fatalError("Failed to create ModelContainer after store reset: \(error)")
+            }
         }
     }
 
@@ -29,12 +48,13 @@ struct MusicBrowserApp: App {
                 .environment(musicService)
                 .environment(playerService)
                 .environment(analysisService)
-                .environment(presetService)
-                .environment(lyricsService)
                 .environment(annotationService)
                 .task {
                     let status = await MusicAuthorization.request()
                     musicService.isAuthorized = (status == .authorized)
+                    if musicService.isAuthorized {
+                        Task { await musicService.prefetchSubscriptionStatus() }
+                    }
                 }
         }
         .modelContainer(container)

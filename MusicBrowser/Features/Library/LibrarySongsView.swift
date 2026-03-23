@@ -2,8 +2,6 @@ import SwiftUI
 import MusicKit
 
 struct LibrarySongsView: View {
-    let isActive: Bool
-
     @Environment(MusicService.self) private var musicService
     @Environment(AnalysisService.self) private var analysisService
     @Environment(PlayerService.self) private var player
@@ -15,6 +13,8 @@ struct LibrarySongsView: View {
     @State private var loadTask: Task<Void, Never>?
     @State private var sortOption: SongSortOption = .title
     @State private var sortDirection: SortDirection = .ascending
+    @State private var grouping: SongGrouping = .letter
+    @State private var groupCache: [(String, [Song])] = []
     @State private var filterArtist: String = ""
     @State private var filterGenre: String = ""
     @State private var bpmMin: Double = 0
@@ -60,15 +60,20 @@ struct LibrarySongsView: View {
             }
         }
         .toolbar {
-            if isActive {
-                ToolbarItem(placement: .automatic) {
-                    Menu {
-                        sortSection
-                        directionSection
-                        filterSection
-                    } label: {
-                        Label("View Options", systemImage: "line.3.horizontal.decrease")
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    sortSection
+                    directionSection
+                    filterSection
+                    Section("Group By") {
+                        Picker("Grouping", selection: $grouping) {
+                            ForEach(SongGrouping.allCases, id: \.self) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
                     }
+                } label: {
+                    Label("View Options", systemImage: "line.3.horizontal.decrease")
                 }
             }
         }
@@ -89,6 +94,7 @@ struct LibrarySongsView: View {
                 rebuildDisplayCache()
             }
         }
+        .onChange(of: grouping) { _, _ in rebuildGroups() }
         .onChange(of: filterArtist) { _, _ in rebuildDisplayCache() }
         .onChange(of: filterGenre) { _, _ in rebuildDisplayCache() }
         .animation(.snappy(duration: 0.2), value: filteredSongsCache.count)
@@ -99,11 +105,29 @@ struct LibrarySongsView: View {
 
     // MARK: - Song List
 
+    /// Songs grouped by first letter for section-based scrolling.
+    /// Section anchors are always present in the view hierarchy so
+    /// `ScrollViewReader.scrollTo` works even for off-screen letters.
+    private var groupedByLetter: [(key: String, value: [Song])] {
+        Dictionary(grouping: filteredSongs) { firstLetter(for: $0.title) }
+            .sorted { $0.key < $1.key }
+    }
+
     private var songList: some View {
+        Group {
+            if grouping == .letter {
+                letterGroupedList
+            } else {
+                yearGroupedList
+            }
+        }
+    }
+
+    private var letterGroupedList: some View {
         ScrollViewReader { proxy in
             HStack(spacing: 0) {
                 ScrollView {
-                    LazyVStack(spacing: 0) {
+                    LazyVStack(spacing: 0, pinnedViews: []) {
                         HStack {
                             Text("\(filteredSongs.count) songs")
                                 .font(.caption)
@@ -114,15 +138,25 @@ struct LibrarySongsView: View {
                         .padding(.vertical, 8)
                         .id("songs-top")
 
-                        ForEach(Array(filteredSongs.enumerated()), id: \.element.id) { idx, song in
-                            songRow(song)
-                                .id(song.id.rawValue)
-                                .task {
-                                    if idx == filteredSongs.count - 5 { await loadMore() }
-                                }
+                        ForEach(groupedByLetter, id: \.key) { letter, songs in
+                            // Invisible anchor that is always in the view tree
+                            Color.clear
+                                .frame(height: 0)
+                                .id("section-\(letter)")
 
-                            if idx < filteredSongs.count - 1 {
-                                Divider().padding(.leading, 68)
+                            ForEach(Array(songs.enumerated()), id: \.element.id) { idx, song in
+                                songRow(song)
+                                    .task {
+                                        // Trigger pagination when near the end of ALL songs
+                                        if song.id == filteredSongs.last?.id ||
+                                           filteredSongs.suffix(5).contains(where: { $0.id == song.id }) {
+                                            await loadMore()
+                                        }
+                                    }
+
+                                if !(letter == groupedByLetter.last?.key && idx == songs.count - 1) {
+                                    Divider().padding(.leading, 68)
+                                }
                             }
                         }
 
@@ -137,13 +171,56 @@ struct LibrarySongsView: View {
                 SectionIndexRail(
                     availableLetters: Set(availableLetters),
                     onScrollTo: { letter in
-                        if let firstMatch = filteredSongs.first(where: { firstLetter(for: $0.title) == letter }) {
-                            withAnimation(.snappy(duration: 0.2)) {
-                                proxy.scrollTo(firstMatch.id.rawValue, anchor: .top)
-                            }
+                        withAnimation(.snappy(duration: 0.2)) {
+                            proxy.scrollTo("section-\(letter)", anchor: .top)
                         }
                     }
                 )
+            }
+        }
+    }
+
+    private var yearGroupedList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Text("\(filteredSongs.count) songs")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+
+                ForEach(groupCache, id: \.0) { label, songs in
+                    Section {
+                        ForEach(Array(songs.enumerated()), id: \.element.id) { idx, song in
+                            songRow(song)
+                                .task {
+                                    if song.id == filteredSongs.last?.id ||
+                                       filteredSongs.suffix(5).contains(where: { $0.id == song.id }) {
+                                        await loadMore()
+                                    }
+                                }
+
+                            if idx < songs.count - 1 {
+                                Divider().padding(.leading, 68)
+                            }
+                        }
+                    } header: {
+                        Text(label)
+                            .font(.title3.bold())
+                            .padding(.horizontal)
+                            .padding(.top, 16)
+                            .padding(.bottom, 4)
+                    }
+                }
+
+                if hasMore {
+                    ProgressView()
+                        .padding()
+                        .symbolEffect(.pulse, options: .repeating)
+                }
             }
         }
     }
@@ -331,11 +408,36 @@ struct LibrarySongsView: View {
 
         displayCache = result
         rebuildFilteredCache()
+        rebuildGroups()
     }
 
     private func rebuildFilteredCache() {
         availableLettersCache = displayCache.availableLetters
         filteredSongsCache = displayCache
+    }
+
+    private func rebuildGroups() {
+        switch grouping {
+        case .letter:
+            groupCache = []
+        case .year:
+            let grouped = Dictionary(grouping: displayCache) { song -> String in
+                guard let year = song.releaseDate?.year else { return "Unknown" }
+                return String(year)
+            }
+            groupCache = grouped.sorted { a, b in
+                sortDirection.isAscending ? a.key < b.key : a.key > b.key
+            }
+        case .decade:
+            let grouped = Dictionary(grouping: displayCache) { song -> String in
+                guard let year = song.releaseDate?.year else { return "Unknown" }
+                let decade = (year / 10) * 10
+                return "\(decade)s"
+            }
+            groupCache = grouped.sorted { a, b in
+                sortDirection.isAscending ? a.key < b.key : a.key > b.key
+            }
+        }
     }
 
     private var filteredSongs: [Song] { filteredSongsCache }
@@ -357,7 +459,7 @@ struct LibrarySongsView: View {
             loadError = nil
             rebuildIndexes()
             rebuildDisplayCache()
-            await analysisService.analyzeBatch(Array(songs.prefix(50)))
+            await analysisService.analyzeBatch(Array(songs.prefix(20)))
         } catch {
             guard !Task.isCancelled else { return }
             loadError = error
@@ -399,7 +501,7 @@ struct LibrarySongsView: View {
 #Preview("Library Songs") {
     PreviewHost {
         NavigationStack {
-            LibrarySongsView(isActive: true)
+            LibrarySongsView()
         }
     }
 }

@@ -11,7 +11,7 @@ struct ContentView: View {
     @State private var showNowPlaying = false
 
     enum Tab: Hashable {
-        case library, search
+        case library, notes, search
     }
 
     var body: some View {
@@ -22,6 +22,12 @@ struct ContentView: View {
                 }
                 .tabItem { Label("Library", systemImage: "music.note.list") }
                 .tag(Tab.library)
+
+                NavigationStack {
+                    NotesView()
+                }
+                .tabItem { Label("Notes", systemImage: "note.text") }
+                .tag(Tab.notes)
 
                 NavigationStack {
                     SearchView()

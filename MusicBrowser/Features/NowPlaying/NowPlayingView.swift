@@ -4,12 +4,12 @@ import MusicKit
 struct NowPlayingView: View {
     @Environment(PlayerService.self) private var player
     @Environment(MusicService.self) private var musicService
+    @Environment(AnalysisService.self) private var analysis
     @Environment(\.dismiss) private var dismiss
 
     @State private var isSeeking = false
     @State private var seekTime: TimeInterval = 0
     @State private var showQueue = false
-    @State private var showLyrics = false
 
     var body: some View {
         NavigationStack {
@@ -18,7 +18,9 @@ struct NowPlayingView: View {
                 artwork
                 Spacer().frame(height: 32)
                 trackInfo
-                Spacer().frame(height: 24)
+                Spacer().frame(height: 16)
+                LiveBPMView(bpm: analysis.bpm(for: player.currentSongID?.rawValue ?? ""))
+                Spacer().frame(height: 16)
                 progressBar
                 Spacer().frame(height: 24)
                 controls
@@ -35,24 +37,14 @@ struct NowPlayingView: View {
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
-                    HStack(spacing: 12) {
-                        if player.hasLyrics {
-                            Button { showLyrics = true } label: {
-                                Image(systemName: "quote.bubble")
-                            }
-                        }
-                        Button { showQueue = true } label: {
-                            Image(systemName: "list.bullet")
-                        }
+                    Button { showQueue = true } label: {
+                        Image(systemName: "list.bullet")
                     }
                 }
             }
         }
         .sheet(isPresented: $showQueue) {
             QueueView()
-        }
-        .sheet(isPresented: $showLyrics) {
-            LyricsView()
         }
         #if os(macOS)
         .frame(minWidth: 400, minHeight: 560)
@@ -62,22 +54,8 @@ struct NowPlayingView: View {
     // MARK: - Artwork
 
     private var artwork: some View {
-        Group {
-            if let art = player.currentArtwork {
-                ArtworkImage(art, width: 280, height: 280)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-            } else {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.quaternary)
-                    .frame(width: 280, height: 280)
-                    .overlay {
-                        Image(systemName: "music.note")
-                            .font(.system(size: 64))
-                            .foregroundStyle(.tertiary)
-                    }
-            }
-        }
+        ArtworkView(artwork: player.currentArtwork, size: 280)
+            .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
     }
 
     // MARK: - Track Info

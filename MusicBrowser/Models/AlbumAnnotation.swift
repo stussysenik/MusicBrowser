@@ -2,8 +2,8 @@ import Foundation
 import SwiftData
 
 @Model
-final class SongAnnotation {
-    @Attribute(.unique) var songID: String
+final class AlbumAnnotation {
+    @Attribute(.unique) var albumID: String
     var title: String
     var artistName: String
     var notes: String
@@ -17,8 +17,8 @@ final class SongAnnotation {
         set { tagsRaw = newValue.joined(separator: ",") }
     }
 
-    init(songID: String, title: String, artistName: String) {
-        self.songID = songID
+    init(albumID: String, title: String, artistName: String) {
+        self.albumID = albumID
         self.title = title
         self.artistName = artistName
         self.notes = ""

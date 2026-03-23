@@ -36,11 +36,21 @@ enum AlbumSortOption: String, CaseIterable {
     var isAPISort: Bool { true }
 }
 
+// MARK: - Album Grouping
+
 enum AlbumGrouping: String, CaseIterable {
     case none = "None"
     case year = "Year"
     case decade = "Decade"
     case artist = "Artist"
+}
+
+// MARK: - Song Grouping
+
+enum SongGrouping: String, CaseIterable {
+    case letter = "Letter"
+    case year = "Year"
+    case decade = "Decade"
 }
 
 // MARK: - Playlist Sort

@@ -7,6 +7,7 @@ struct TrackRow: View {
     let artwork: Artwork?
     let duration: TimeInterval?
     var number: Int? = nil
+    var bpm: Double? = nil
     var onTap: () -> Void
 
     var body: some View {
@@ -32,6 +33,10 @@ struct TrackRow: View {
                 }
 
                 Spacer()
+
+                if let bpm {
+                    BPMBadgeView(bpm: bpm)
+                }
 
                 if let duration {
                     Text(formatDuration(duration))

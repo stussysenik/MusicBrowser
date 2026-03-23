@@ -9,11 +9,14 @@ struct ShimmerModifier: ViewModifier {
         content
             .overlay {
                 GeometryReader { geo in
+                    let lo = max(0, min(1, phase - 0.3))
+                    let mid = max(lo, min(1, phase))
+                    let hi = max(mid, min(1, phase + 0.3))
                     LinearGradient(
                         stops: [
-                            .init(color: .clear, location: max(0, phase - 0.3)),
-                            .init(color: .white.opacity(0.4), location: phase),
-                            .init(color: .clear, location: min(1, phase + 0.3))
+                            .init(color: .clear, location: lo),
+                            .init(color: .white.opacity(0.4), location: mid),
+                            .init(color: .clear, location: hi)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing

@@ -10,18 +10,7 @@ struct MiniPlayerView: View {
             showNowPlaying = true
         } label: {
             HStack(spacing: 12) {
-                if let artwork = player.currentArtwork {
-                    ArtworkImage(artwork, width: 44, height: 44)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                } else {
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(.quaternary)
-                        .frame(width: 44, height: 44)
-                        .overlay {
-                            Image(systemName: "music.note")
-                                .foregroundStyle(.tertiary)
-                        }
-                }
+                ArtworkView(artwork: player.currentArtwork, size: 44)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(player.currentTitle ?? "Not Playing")
