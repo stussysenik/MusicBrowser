@@ -2,6 +2,9 @@
 
 # MusicBrowser
 
+![Demo](demo.gif)
+
+
 ### A refined music browser for iOS & macOS
 
 ![Swift](https://img.shields.io/badge/Swift-5.9-F05138?style=flat-square&logo=swift&logoColor=white)
