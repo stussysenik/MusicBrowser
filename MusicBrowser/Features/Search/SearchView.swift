@@ -10,20 +10,44 @@ struct SearchView: View {
     @State private var searchTask: Task<Void, Never>?
     @State private var searchError: Error?
     @State private var isSearching = false
-    @State private var searchScope: SearchScope = .catalog
+    @State private var searchScope: SearchScope = .library
     @State private var addToPlaylistSong: Song?
+    @State private var catalogUnavailable = false
+    @State private var shouldRefreshLibrarySnapshot = true
 
     private enum SearchScope: String, CaseIterable {
-        case catalog = "Catalog"
         case library = "Library"
+        case catalog = "Apple Music"
     }
 
     private var trimmedSearchText: String {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    @ViewBuilder
     var body: some View {
+        if musicService.runtime.usesDummyData {
+            DemoSearchView()
+        } else {
+            liveSearch
+        }
+    }
+
+    private var liveSearch: some View {
         List {
+            if catalogUnavailable && searchScope == .catalog {
+                Section {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundStyle(.orange)
+                        Text("Apple Music search needs access to the Apple Music catalog. Showing library results.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .listRowBackground(Color.orange.opacity(0.1))
+                }
+            }
+
             if searchError != nil, results == nil, !isSearching {
                 ContentUnavailableView {
                     Label("Search Unavailable", systemImage: "exclamationmark.triangle")
@@ -48,6 +72,7 @@ struct SearchView: View {
                 albumResults(results)
                 artistResults(results)
                 playlistResults(results)
+                musicVideoResults(results)
 
                 if hasNoResults(results) {
                     ContentUnavailableView(
@@ -77,20 +102,26 @@ struct SearchView: View {
         .navigationDestination(for: Artist.self) { ArtistDetailView(artist: $0) }
         .navigationDestination(for: Playlist.self) { PlaylistDetailView(playlist: $0) }
         .onChange(of: searchText) { _, newValue in
+            if newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                shouldRefreshLibrarySnapshot = true
+            }
             runSearch(for: newValue)
         }
         .onChange(of: searchScope) { _, _ in
+            catalogUnavailable = false
+            shouldRefreshLibrarySnapshot = true
             if !trimmedSearchText.isEmpty {
                 runSearch(for: trimmedSearchText, debounce: false)
             }
         }
         .onDisappear {
             searchTask?.cancel()
+            shouldRefreshLibrarySnapshot = true
         }
         .animation(.snappy(duration: 0.2), value: isSearching)
         .animation(.snappy(duration: 0.2), value: searchScope)
         .sheet(item: $addToPlaylistSong) { song in
-            AddToPlaylistSheet(song: song)
+            AddToPlaylistSheet(songs: [song])
         }
     }
 
@@ -118,13 +149,30 @@ struct SearchView: View {
                 let response: MusicService.SearchResults
                 switch searchScope {
                 case .catalog:
-                    response = try await musicService.search(term)
+                    response = try await musicService.searchCatalogDirect(term)
                 case .library:
-                    response = try await musicService.searchLibraryLocal(term: term)
+                    let forceRefresh = shouldRefreshLibrarySnapshot
+                    response = try await musicService.searchLibraryLocal(term: term, forceRefresh: forceRefresh)
+                    shouldRefreshLibrarySnapshot = false
                 }
                 guard !Task.isCancelled else { return }
+                catalogUnavailable = false
                 results = response
                 searchError = nil
+            } catch let error as MusicService.SearchError
+                where error == .catalogUnavailable || error == .catalogAuthorizationRequired {
+                guard !Task.isCancelled else { return }
+                catalogUnavailable = true
+                // Fall back to library search automatically
+                if let libraryResults = try? await musicService.searchLibraryLocal(
+                    term: term,
+                    forceRefresh: shouldRefreshLibrarySnapshot
+                ) {
+                    results = libraryResults
+                    shouldRefreshLibrarySnapshot = false
+                }
+                isSearching = false
+                return
             } catch is CancellationError {
                 return
             } catch {
@@ -140,7 +188,7 @@ struct SearchView: View {
     }
 
     private func hasNoResults(_ res: MusicService.SearchResults) -> Bool {
-        res.songs.isEmpty && res.albums.isEmpty && res.artists.isEmpty && res.playlists.isEmpty
+        res.songs.isEmpty && res.albums.isEmpty && res.artists.isEmpty && res.playlists.isEmpty && res.musicVideos.isEmpty
     }
 
     // MARK: - Result Sections
@@ -243,6 +291,36 @@ struct SearchView: View {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func musicVideoResults(_ res: MusicService.SearchResults) -> some View {
+        if !res.musicVideos.isEmpty {
+            Section("Music Videos") {
+                ForEach(res.musicVideos.prefix(6)) { video in
+                    HStack(spacing: 12) {
+                        ArtworkView(artwork: video.artwork, size: 60)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(video.title).lineLimit(1)
+                            Text(video.artistName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                        Button {
+                            player.openMusicVideo(video)
+                        } label: {
+                            Image(systemName: "play.circle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.primary)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }

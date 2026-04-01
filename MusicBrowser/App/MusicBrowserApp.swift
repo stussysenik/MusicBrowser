@@ -4,23 +4,46 @@ import MusicKit
 
 @main
 struct MusicBrowserApp: App {
-    @State private var musicService = MusicService()
-    @State private var playerService = PlayerService()
-    @State private var analysisService = AnalysisService()
-    @State private var annotationService = AnnotationService()
+    private let runtime: AppRuntime
+    @State private var musicService: MusicService
+    @State private var playerService: PlayerService
+    @State private var analysisService: AnalysisService
+    @State private var annotationService: AnnotationService
 
     let container: ModelContainer
 
     init() {
-        let config = ModelConfiguration(cloudKitDatabase: .automatic)
+        StringArrayTransformer.register()
+        let runtime = AppRuntime.current
+        self.runtime = runtime
+        _musicService = State(initialValue: MusicService(runtime: runtime))
+        _playerService = State(initialValue: PlayerService(runtime: runtime))
+        _analysisService = State(initialValue: AnalysisService(runtime: runtime))
+        _annotationService = State(initialValue: AnnotationService())
+
+        let config: ModelConfiguration
+        if runtime.usesDummyData, let storeURL = runtime.storeURL {
+            try? FileManager.default.createDirectory(
+                at: storeURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            config = ModelConfiguration(url: storeURL, cloudKitDatabase: .none)
+        } else {
+            config = ModelConfiguration(cloudKitDatabase: .none)
+        }
         let storeURL = config.url
 
-        do {
-            container = try ModelContainer(
-                for: SongAnnotation.self, SongAnalysis.self, AlbumAnnotation.self,
-                migrationPlan: MusicBrowserMigrationPlan.self,
-                configurations: config
+        func makeContainer(using configuration: ModelConfiguration) throws -> ModelContainer {
+            return try ModelContainer(
+                for: MusicBrowserSchemaV3.SongAnnotation.self,
+                MusicBrowserSchemaV3.SongAnalysis.self,
+                MusicBrowserSchemaV3.AlbumAnnotation.self,
+                configurations: configuration
             )
+        }
+
+        do {
+            container = try makeContainer(using: config)
         } catch {
             // Destructive fallback — delete corrupt/unmigrateable store and retry
             print("Store failed to load, resetting: \(error)")
@@ -31,13 +54,15 @@ struct MusicBrowserApp: App {
                 )
             }
             do {
-                container = try ModelContainer(
-                    for: SongAnnotation.self, SongAnalysis.self, AlbumAnnotation.self,
-                    migrationPlan: MusicBrowserMigrationPlan.self,
-                    configurations: config
-                )
+                container = try makeContainer(using: config)
             } catch {
-                fatalError("Failed to create ModelContainer after store reset: \(error)")
+                print("Store retry failed, falling back to in-memory storage: \(error)")
+                let inMemoryConfig = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+                do {
+                    container = try makeContainer(using: inMemoryConfig)
+                } catch {
+                    fatalError("Failed to create ModelContainer after in-memory fallback: \(error)")
+                }
             }
         }
     }
@@ -50,10 +75,13 @@ struct MusicBrowserApp: App {
                 .environment(analysisService)
                 .environment(annotationService)
                 .task {
-                    let status = await MusicAuthorization.request()
-                    musicService.isAuthorized = (status == .authorized)
-                    if musicService.isAuthorized {
-                        Task { await musicService.prefetchSubscriptionStatus() }
+                    if runtime.requiresMusicAuthorization {
+                        musicService.isAuthorized = MusicAuthorization.currentStatus == .authorized
+                    } else {
+                        musicService.isAuthorized = true
+                        #if os(iOS)
+                        await musicService.prepareFallbackLibraryIfPossible(requestAccess: true)
+                        #endif
                     }
                 }
         }

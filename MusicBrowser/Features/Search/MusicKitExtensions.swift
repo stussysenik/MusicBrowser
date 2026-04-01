@@ -11,3 +11,5 @@ extension Artist: FilterableByLetter {
 extension Playlist: FilterableByLetter {
     var title: String { name }
 }
+
+extension MusicVideo: FilterableByLetter {}

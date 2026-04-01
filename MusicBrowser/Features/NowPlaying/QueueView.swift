@@ -1,5 +1,4 @@
 import SwiftUI
-import MusicKit
 
 struct QueueView: View {
     @Environment(PlayerService.self) private var player
@@ -8,7 +7,7 @@ struct QueueView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if player.queueEntries.isEmpty {
+                if player.playbackQueueItems.isEmpty {
                     ContentUnavailableView(
                         "Queue Empty",
                         systemImage: "list.bullet",
@@ -16,13 +15,13 @@ struct QueueView: View {
                     )
                 } else {
                     List {
-                        if let current = player.currentQueueEntry {
+                        if let current = player.currentPlaybackItem {
                             Section("Now Playing") {
                                 queueRow(current, isCurrent: true)
                             }
                         }
 
-                        let upcoming = player.upcomingEntries
+                        let upcoming = player.upcomingPlaybackItems
                         if !upcoming.isEmpty {
                             Section("Up Next") {
                                 ForEach(upcoming) { entry in
@@ -44,12 +43,12 @@ struct QueueView: View {
     }
 
     @ViewBuilder
-    private func queueRow(_ entry: ApplicationMusicPlayer.Queue.Entry, isCurrent: Bool) -> some View {
+    private func queueRow(_ entry: PlaybackQueueItem, isCurrent: Bool) -> some View {
         HStack(spacing: 12) {
             ArtworkView(artwork: entry.artwork, size: 44)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(entry.title ?? "Unknown")
+                Text(entry.title)
                     .font(isCurrent ? .body.bold() : .body)
                     .lineLimit(1)
                 if let subtitle = entry.subtitle {

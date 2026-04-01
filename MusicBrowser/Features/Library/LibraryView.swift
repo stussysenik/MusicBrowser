@@ -5,12 +5,10 @@ struct LibraryView: View {
     @Environment(PlayerService.self) private var player
     @Environment(MusicService.self) private var musicService
     @State private var selectedTab = 0
-
-    #if DEBUG
+    
     private var isDemoMode: Bool {
-        ProcessInfo.processInfo.arguments.contains("-demo-mode")
+        musicService.runtime.usesDummyData
     }
-    #endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,19 +23,23 @@ struct LibraryView: View {
             Group {
                 switch selectedTab {
                 case 0:
-                    #if DEBUG
                     if isDemoMode {
                         DemoLibrarySongsView()
                     } else {
                         LibrarySongsView()
                     }
-                    #else
-                    LibrarySongsView()
-                    #endif
                 case 1:
-                    LibraryAlbumsView()
+                    if isDemoMode {
+                        DemoLibraryAlbumsView()
+                    } else {
+                        LibraryAlbumsView()
+                    }
                 default:
-                    LibrarySongsView()
+                    if isDemoMode {
+                        DemoLibrarySongsView()
+                    } else {
+                        LibrarySongsView()
+                    }
                 }
             }
         }
@@ -50,12 +52,15 @@ struct LibraryView: View {
                 } label: {
                     Label("Play Random", systemImage: "dice")
                 }
+                .accessibilityIdentifier("library-play-random")
             }
         }
         .navigationDestination(for: Song.self) { SongDetailView(song: $0) }
         .navigationDestination(for: Album.self) { AlbumDetailView(album: $0) }
         .navigationDestination(for: Playlist.self) { PlaylistDetailView(playlist: $0) }
         .navigationDestination(for: Artist.self) { ArtistDetailView(artist: $0) }
+        .navigationDestination(for: DemoSong.self) { DemoSongDetailView(song: $0) }
+        .navigationDestination(for: DemoAlbum.self) { DemoAlbumDetailView(album: $0) }
     }
 }
 

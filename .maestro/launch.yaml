@@ -1,0 +1,14 @@
+appId: com.musicbrowser.app
+tags:
+  - smoke
+---
+- launchApp:
+    clearState: true
+    arguments:
+      demo-mode: ""
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn: "Library"
+- assertVisible: "Library"
+- assertVisible: "songs"

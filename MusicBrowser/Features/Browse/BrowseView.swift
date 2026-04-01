@@ -8,6 +8,7 @@ struct BrowseView: View {
     @State private var songChart: MusicCatalogChart<Song>?
     @State private var albumChart: MusicCatalogChart<Album>?
     @State private var playlistChart: MusicCatalogChart<Playlist>?
+    @State private var musicVideos: [MusicVideo] = []
     @State private var isLoading = false
     @State private var hasLoaded = false
     @State private var error: Error?
@@ -53,6 +54,15 @@ struct BrowseView: View {
                                     AlbumCard(playlist, size: cardSize)
                                 }
                                 .buttonStyle(.plain)
+                            }
+                        }
+                    }
+                    if !musicVideos.isEmpty {
+                        horizontalSection("Music Videos") {
+                            ForEach(musicVideos) { video in
+                                MusicVideoCard(video: video) {
+                                    player.openMusicVideo(video)
+                                }
                             }
                         }
                     }
@@ -132,6 +142,9 @@ struct BrowseView: View {
             songChart = response.songCharts.first
             albumChart = response.albumCharts.first
             playlistChart = response.playlistCharts.first
+            if let videoChart = response.musicVideoCharts.first {
+                musicVideos = Array(videoChart.items)
+            }
             error = nil
         } catch {
             self.error = error

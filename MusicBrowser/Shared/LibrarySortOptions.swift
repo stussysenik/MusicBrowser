@@ -51,6 +51,7 @@ enum SongGrouping: String, CaseIterable {
     case letter = "Letter"
     case year = "Year"
     case decade = "Decade"
+    case tempo = "Tempo"
 }
 
 // MARK: - Playlist Sort

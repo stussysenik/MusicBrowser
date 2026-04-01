@@ -1,0 +1,21 @@
+appId: com.musicbrowser.app
+tags:
+  - albums
+  - layout
+---
+- launchApp:
+    clearState: true
+    arguments:
+      demo-mode: ""
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn: "Library"
+- tapOn: "Albums"
+- assertVisible: "76 in demo library"
+- assertVisible: "1984"
+- tapOn: "Album View Options"
+- tapOn: "Artist"
+- assertVisible: "ABBA"
+- tapOn: "Arrival"
+- assertVisible: "ABBA"

@@ -20,7 +20,7 @@ struct LibraryAlbumsView: View {
     @State private var availableLettersCache: [String] = []
 
     private let columns = [
-        GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 16)
+        GridItem(.adaptive(minimum: 168, maximum: 220), spacing: 18, alignment: .top)
     ]
 
     var body: some View {
@@ -79,6 +79,8 @@ struct LibraryAlbumsView: View {
                 } label: {
                     Label("View Options", systemImage: "line.3.horizontal.decrease")
                 }
+                .accessibilityLabel("Album View Options")
+                .accessibilityIdentifier("library-albums-view-options")
             }
         }
         .task { await loadAlbums() }
@@ -98,22 +100,18 @@ struct LibraryAlbumsView: View {
 
     private var flatGridView: some View {
         ScrollViewReader { proxy in
-            HStack(spacing: 0) {
+            ZStack(alignment: .trailing) {
                 ScrollView {
-                    VStack(spacing: 8) {
-                        HStack {
-                            Text("\(albums.count) albums")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-                        .padding(.horizontal)
-                        .id("albums-top")
+                    VStack(spacing: 18) {
+                        summaryHeader
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                            .id("albums-top")
 
                         LazyVGrid(columns: columns, spacing: 20) {
                             ForEach(Array(albums.enumerated()), id: \.element.id) { idx, album in
                                 NavigationLink(value: album) {
-                                    AlbumCard(album, size: 160)
+                                    AlbumCard(album, size: 176)
                                 }
                                 .buttonStyle(.plain)
                                 .id(album.id.rawValue)
@@ -129,7 +127,20 @@ struct LibraryAlbumsView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
 
+                #if canImport(UIKit)
+                UIKitSectionIndexRail(
+                    availableLetters: Set(availableLettersCache),
+                    onScrollTo: { letter in
+                        if let firstMatch = albums.first(where: { firstLetter(for: $0.title) == letter }) {
+                            withAnimation(.snappy(duration: 0.2)) {
+                                proxy.scrollTo(firstMatch.id.rawValue, anchor: .top)
+                            }
+                        }
+                    }
+                )
+                #else
                 SectionIndexRail(
                     availableLetters: Set(availableLettersCache),
                     onScrollTo: { letter in
@@ -140,38 +151,71 @@ struct LibraryAlbumsView: View {
                         }
                     }
                 )
+                #endif
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
     }
 
     private var groupedView: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 20) {
-                ForEach(groupCache, id: \.0) { label, groupAlbums in
-                    Section {
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(groupAlbums) { album in
-                                NavigationLink(value: album) {
-                                    AlbumCard(album, size: 160)
-                                }
-                                .buttonStyle(.plain)
+        List {
+            Section {
+                summaryHeader
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color.clear)
+            }
+
+            ForEach(groupCache, id: \.0) { label, groupAlbums in
+                Section(label) {
+                    ForEach(Array(groupAlbums.enumerated()), id: \.element.id) { idx, album in
+                        NavigationLink(value: album) {
+                            AlbumRowContent(album)
+                        }
+                        .buttonStyle(.plain)
+                        .task {
+                            if idx == groupAlbums.count - 1,
+                               label == groupCache.last?.0 {
+                                await loadMore()
                             }
                         }
-                    } header: {
-                        Text(label)
-                            .font(.title2.bold())
-                            .padding(.horizontal)
                     }
                 }
+            }
 
-                if hasMore {
+            if hasMore {
+                Section {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .task { await loadMore() }
                 }
             }
-            .padding()
+        }
+        #if os(macOS)
+        .listStyle(.automatic)
+        #else
+        .listStyle(.insetGrouped)
+        #endif
+    }
+
+    private var summaryHeader: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Albums")
+                    .font(.title3.weight(.semibold))
+                Text("\(albums.count) in library")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(sortOption.rawValue)
+                    .font(.caption.weight(.semibold))
+                Text(grouping == .none ? "Grid" : grouping.rawValue)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

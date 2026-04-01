@@ -1,0 +1,38 @@
+appId: com.musicbrowser.app
+tags:
+  - playback
+  - smoke
+---
+- launchApp:
+    clearState: true
+    arguments:
+      demo-mode: ""
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn: "Library"
+- assertVisible: "Library"
+- tapOn:
+    id: "library-play-random"
+- assertVisible:
+    id: "mini-player-open"
+- tapOn: "Notes"
+- assertVisible: "Notes"
+- tapOn: "Library"
+- tapOn:
+    id: "mini-player-open"
+- assertVisible:
+    id: "now-playing-play-pause"
+- tapOn:
+    id: "now-playing-skip-forward"
+- tapOn:
+    id: "now-playing-skip-backward"
+- tapOn:
+    id: "now-playing-action-playlist"
+- assertVisible:
+    id: "demo-playlist-new-name"
+- tapOn:
+    id: "demo-playlist-new-name"
+- inputText: "Rapid Mix"
+- tapOn:
+    id: "demo-playlist-create"

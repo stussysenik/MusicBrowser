@@ -8,6 +8,8 @@ import MusicKit
 /// and navigates to the appropriate detail view.
 struct NotesView: View {
     @Environment(MusicService.self) private var musicService
+    @Environment(AnnotationService.self) private var annotationService
+    @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \SongAnnotation.updatedAt, order: .reverse)
     private var annotations: [SongAnnotation]
@@ -17,6 +19,12 @@ struct NotesView: View {
 
     @State private var searchText = ""
     @State private var noteFilter: NoteFilter = .all
+    #if os(iOS)
+    @State private var exportURL: ExportURL?
+    #else
+    @State private var isExporting = false
+    @State private var exportDocument = NotesExportDocument(data: Data("[]".utf8))
+    #endif
 
     // MARK: - Filter Enum
 
@@ -59,6 +67,18 @@ struct NotesView: View {
         var isSong: Bool {
             if case .song = self { return true } else { return false }
         }
+        var timestampLabels: [String] {
+            NoteHyperData.timestamps(in: notes)
+        }
+        var timestampCount: Int {
+            timestampLabels.count
+        }
+        var noteCharacterCount: Int {
+            NoteHyperData.characterCount(in: notes)
+        }
+        var previewTags: String? {
+            NoteHyperData.previewTags(tags)
+        }
     }
 
     // MARK: - Filtered / Merged List
@@ -67,19 +87,25 @@ struct NotesView: View {
         var items: [NoteItem] = []
         if noteFilter != .albums {
             let filtered = searchText.isEmpty ? Array(annotations) : annotations.filter { annotation in
-                annotation.title.localizedCaseInsensitiveContains(searchText)
-                || annotation.artistName.localizedCaseInsensitiveContains(searchText)
-                || annotation.notes.localizedCaseInsensitiveContains(searchText)
-                || annotation.tags.contains { $0.localizedCaseInsensitiveContains(searchText) }
+                SearchMatcher.matches(term: searchText, fields: [
+                    annotation.title,
+                    annotation.artistName,
+                    annotation.notes,
+                    annotation.tags.joined(separator: " "),
+                    NoteHyperData.timestamps(in: annotation.notes).joined(separator: " ")
+                ])
             }
             items += filtered.map { .song($0) }
         }
         if noteFilter != .songs {
             let filtered = searchText.isEmpty ? Array(albumAnnotations) : albumAnnotations.filter { annotation in
-                annotation.title.localizedCaseInsensitiveContains(searchText)
-                || annotation.artistName.localizedCaseInsensitiveContains(searchText)
-                || annotation.notes.localizedCaseInsensitiveContains(searchText)
-                || annotation.tags.contains { $0.localizedCaseInsensitiveContains(searchText) }
+                SearchMatcher.matches(term: searchText, fields: [
+                    annotation.title,
+                    annotation.artistName,
+                    annotation.notes,
+                    annotation.tags.joined(separator: " "),
+                    NoteHyperData.timestamps(in: annotation.notes).joined(separator: " ")
+                ])
             }
             items += filtered.map { .album($0) }
         }
@@ -113,7 +139,7 @@ struct NotesView: View {
             }
         }
         .navigationTitle("Notes")
-        .searchable(text: $searchText, prompt: "Search notes")
+        .searchable(text: $searchText, prompt: "Search notes, tags, timestamps")
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Picker("Filter", selection: $noteFilter) {
@@ -124,13 +150,62 @@ struct NotesView: View {
                 .pickerStyle(.segmented)
                 .frame(width: 200)
             }
+            ToolbarItem(placement: .primaryAction) {
+                if !noteItems.isEmpty {
+                    Button {
+                        exportNotes()
+                    } label: {
+                        Label("Export Notes", systemImage: "square.and.arrow.up")
+                    }
+                }
+            }
         }
+        #if os(iOS)
+        .sheet(item: $exportURL) { export in
+            UIKitActivitySheet(activityItems: [export.url])
+        }
+        #else
+        .fileExporter(
+            isPresented: $isExporting,
+            document: exportDocument,
+            contentType: .json,
+            defaultFilename: "musicbrowser-notes"
+        ) { _ in }
+        #endif
         .navigationDestination(for: SongAnnotation.self) { annotation in
-            SongLoader(songID: annotation.songID)
+            if musicService.runtime.usesDummyData,
+               let song = musicService.dummySong(byID: annotation.songID) {
+                DemoSongDetailView(song: song)
+            } else {
+                SongLoader(songID: annotation.songID)
+            }
         }
         .navigationDestination(for: AlbumAnnotation.self) { annotation in
-            AlbumLoader(albumID: annotation.albumID)
+            if musicService.runtime.usesDummyData,
+               let album = musicService.dummyAlbum(byID: annotation.albumID) {
+                DemoAlbumDetailView(album: album)
+            } else {
+                AlbumLoader(albumID: annotation.albumID)
+            }
         }
+    }
+
+    private func exportNotes() {
+        guard let data = try? annotationService.exportAllNotesJSON(in: modelContext) else { return }
+        #if os(iOS)
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("musicbrowser-notes-\(UUID().uuidString)")
+            .appendingPathExtension("json")
+        do {
+            try data.write(to: url, options: .atomic)
+            exportURL = ExportURL(url: url)
+        } catch {
+            return
+        }
+        #else
+        exportDocument = NotesExportDocument(data: data)
+        isExporting = true
+        #endif
     }
 }
 
@@ -166,6 +241,19 @@ private struct NoteItemRow: View {
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
                 }
+
+                HStack(spacing: 8) {
+                    Label(item.isSong ? "Song" : "Album", systemImage: item.isSong ? "music.note" : "square.stack")
+                    if item.timestampCount > 0 {
+                        Label("\(item.timestampCount) timestamps", systemImage: "waveform")
+                    }
+                    if let previewTags = item.previewTags {
+                        Text(previewTags)
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
 
             Spacer()
@@ -180,6 +268,9 @@ private struct NoteItemRow: View {
                         }
                     }
                 }
+                Text("\(item.noteCharacterCount) chars")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
                 Text(item.updatedAt, style: .relative)
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
@@ -187,6 +278,13 @@ private struct NoteItemRow: View {
         }
     }
 }
+
+#if os(iOS)
+private struct ExportURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+#endif
 
 // MARK: - Song Loader
 

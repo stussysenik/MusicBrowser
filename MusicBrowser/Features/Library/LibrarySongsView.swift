@@ -2,6 +2,11 @@ import SwiftUI
 import MusicKit
 
 struct LibrarySongsView: View {
+    private struct HydrationRequest: Equatable {
+        let sort: SongSortOption
+        let direction: SortDirection
+    }
+
     @Environment(MusicService.self) private var musicService
     @Environment(AnalysisService.self) private var analysisService
     @Environment(PlayerService.self) private var player
@@ -11,6 +16,8 @@ struct LibrarySongsView: View {
     @State private var hasMore = true
     @State private var loadError: Error?
     @State private var loadTask: Task<Void, Never>?
+    @State private var fullLibraryTask: Task<Void, Never>?
+    @State private var fullLibraryTaskToken: UUID?
     @State private var sortOption: SongSortOption = .title
     @State private var sortDirection: SortDirection = .ascending
     @State private var grouping: SongGrouping = .letter
@@ -30,6 +37,11 @@ struct LibrarySongsView: View {
     // Cached derived values (rebuilt explicitly instead of per-render)
     @State private var filteredSongsCache: [Song] = []
     @State private var availableLettersCache: [String] = []
+    @State private var isTimelineHydrating = false
+    @State private var isFullLibraryLoaded = false
+
+    private let timelinePageSize = 100
+    private let sectionRailContentInset: CGFloat = 8
 
     var body: some View {
         Group {
@@ -75,31 +87,47 @@ struct LibrarySongsView: View {
                 } label: {
                     Label("View Options", systemImage: "line.3.horizontal.decrease")
                 }
+                .accessibilityIdentifier("library-view-options")
             }
         }
         .task { await loadSongs() }
         .onChange(of: sortOption) { _, _ in
-            if sortOption.isAPISort {
+            if isFullLibraryLoaded {
+                rebuildDisplayCache()
+            } else if sortOption.isAPISort {
                 loadTask?.cancel()
                 loadTask = Task { await reloadSongs() }
             } else {
                 rebuildDisplayCache()
+                startFullLibraryLoadIfNeeded()
             }
         }
         .onChange(of: sortDirection) { _, _ in
-            if sortOption.isAPISort {
+            if isFullLibraryLoaded {
+                rebuildDisplayCache()
+            } else if sortOption.isAPISort {
                 loadTask?.cancel()
                 loadTask = Task { await reloadSongs() }
             } else {
                 rebuildDisplayCache()
+                startFullLibraryLoadIfNeeded()
             }
         }
-        .onChange(of: grouping) { _, _ in rebuildGroups() }
+        .onChange(of: grouping) { _, newValue in
+            rebuildGroups()
+            if newValue == .letter {
+                startFullLibraryLoadIfNeeded()
+            }
+        }
         .onChange(of: filterArtist) { _, _ in rebuildDisplayCache() }
         .onChange(of: filterGenre) { _, _ in rebuildDisplayCache() }
         .animation(.snappy(duration: 0.2), value: filteredSongsCache.count)
         .sheet(item: $addToPlaylistSong) { song in
-            AddToPlaylistSheet(song: song)
+            AddToPlaylistSheet(songs: [song])
+        }
+        .onDisappear {
+            loadTask?.cancel()
+            stopFullLibraryHydration()
         }
     }
 
@@ -111,6 +139,10 @@ struct LibrarySongsView: View {
     private var groupedByLetter: [(key: String, value: [Song])] {
         Dictionary(grouping: filteredSongs) { firstLetter(for: $0.title) }
             .sorted { $0.key < $1.key }
+    }
+
+    private var tempoSummary: TempoSummary {
+        TempoBuckets.summary(for: filteredSongs.map { analysisService.bpm(for: $0.id.rawValue) })
     }
 
     private var songList: some View {
@@ -125,7 +157,7 @@ struct LibrarySongsView: View {
 
     private var letterGroupedList: some View {
         ScrollViewReader { proxy in
-            HStack(spacing: 0) {
+            ZStack(alignment: .trailing) {
                 ScrollView {
                     LazyVStack(spacing: 0, pinnedViews: []) {
                         HStack {
@@ -137,6 +169,14 @@ struct LibrarySongsView: View {
                         .padding(.horizontal)
                         .padding(.vertical, 8)
                         .id("songs-top")
+
+                        if tempoSummary.analyzedCount > 0 {
+                            tempoOverviewRow
+                        }
+
+                        if grouping == .letter && isTimelineHydrating {
+                            timelineStatusRow
+                        }
 
                         ForEach(groupedByLetter, id: \.key) { letter, songs in
                             // Invisible anchor that is always in the view tree
@@ -164,19 +204,37 @@ struct LibrarySongsView: View {
                             ProgressView()
                                 .padding()
                                 .symbolEffect(.pulse, options: .repeating)
+                        } else if isTimelineHydrating {
+                            ProgressView()
+                                .padding()
+                                .symbolEffect(.pulse, options: .repeating)
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .padding(.trailing, sectionRailContentInset)
 
-                SectionIndexRail(
+                #if canImport(UIKit)
+                UIKitSectionIndexRail(
                     availableLetters: Set(availableLetters),
+                    canSelectUnavailableLetters: isTimelineHydrating || !isFullLibraryLoaded,
                     onScrollTo: { letter in
-                        withAnimation(.snappy(duration: 0.2)) {
-                            proxy.scrollTo("section-\(letter)", anchor: .top)
-                        }
+                        handleLetterSelection(letter, proxy: proxy)
                     }
                 )
+                .padding(.trailing, 4)
+                #else
+                SectionIndexRail(
+                    availableLetters: Set(availableLetters),
+                    canSelectUnavailableLetters: isTimelineHydrating || !isFullLibraryLoaded,
+                    onScrollTo: { letter in
+                        handleLetterSelection(letter, proxy: proxy)
+                    }
+                )
+                .padding(.trailing, 4)
+                #endif
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
         }
     }
 
@@ -191,6 +249,14 @@ struct LibrarySongsView: View {
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 8)
+
+                if tempoSummary.analyzedCount > 0 {
+                    tempoOverviewRow
+                }
+
+                if grouping == .letter && isTimelineHydrating {
+                    timelineStatusRow
+                }
 
                 ForEach(groupCache, id: \.0) { label, songs in
                     Section {
@@ -216,7 +282,7 @@ struct LibrarySongsView: View {
                     }
                 }
 
-                if hasMore {
+                if hasMore || isTimelineHydrating {
                     ProgressView()
                         .padding()
                         .symbolEffect(.pulse, options: .repeating)
@@ -272,7 +338,7 @@ struct LibrarySongsView: View {
         .padding(.vertical, 4)
         .contextMenu {
             Button {
-                Task { try? await player.playSong(song) }
+                Task { await playSongFromVisibleContext(song) }
             } label: {
                 Label("Play", systemImage: "play")
             }
@@ -383,20 +449,9 @@ struct LibrarySongsView: View {
             result = result.filter { $0.genreNames.contains(filterGenre) }
         }
 
-        switch sortOption {
-        case .duration:
-            result.sort { ($0.duration ?? 0) < ($1.duration ?? 0) }
-            if !sortDirection.isAscending { result.reverse() }
-        case .releaseDate:
-            result.sort { ($0.releaseDate ?? .distantPast) < ($1.releaseDate ?? .distantPast) }
-            if !sortDirection.isAscending { result.reverse() }
-        case .bpm:
-            result.sort {
-                (analysisService.bpm(for: $0) ?? 0) < (analysisService.bpm(for: $1) ?? 0)
-            }
-            if !sortDirection.isAscending { result.reverse() }
-        default:
-            break
+        result.sort { compareSongs($0, $1) == .orderedAscending }
+        if !sortDirection.isAscending {
+            result.reverse()
         }
 
         if bpmMin > 0 || bpmMax < 300 {
@@ -437,28 +492,261 @@ struct LibrarySongsView: View {
             groupCache = grouped.sorted { a, b in
                 sortDirection.isAscending ? a.key < b.key : a.key > b.key
             }
+        case .tempo:
+            let grouped = Dictionary(grouping: displayCache) { song in
+                TempoBuckets.label(for: analysisService.bpm(for: song))
+            }
+            groupCache = grouped.sorted { a, b in
+                sortDirection.isAscending ? a.key < b.key : a.key > b.key
+            }
         }
     }
 
     private var filteredSongs: [Song] { filteredSongsCache }
     private var availableLetters: [String] { availableLettersCache }
 
+    private var timelineStatusRow: some View {
+        HStack(spacing: 10) {
+            ProgressView()
+                .controlSize(.small)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Building A-Z timeline")
+                    .font(.caption.weight(.semibold))
+                Text("Indexing more songs in the background. More letters unlock as pages arrive.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
+    private var tempoOverviewRow: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Tempo map")
+                    .font(.caption.weight(.semibold))
+                Text("\(tempoSummary.analyzedCount)/\(tempoSummary.totalCount) analyzed · avg \(Int(tempoSummary.average.rounded())) BPM")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "metronome")
+                .foregroundStyle(.orange)
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
     private func firstLetter(for text: String) -> String {
         StringUtils.firstLetter(of: text)
+    }
+
+    private func compareSongs(_ lhs: Song, _ rhs: Song) -> ComparisonResult {
+        let primary: ComparisonResult
+
+        switch sortOption {
+        case .title:
+            primary = compareText(lhs.title, rhs.title)
+        case .artist:
+            primary = compareText(lhs.artistName, rhs.artistName)
+        case .albumTitle:
+            primary = compareText(lhs.albumTitle ?? "", rhs.albumTitle ?? "")
+        case .dateAdded:
+            primary = compareComparable(lhs.libraryAddedDate ?? .distantPast, rhs.libraryAddedDate ?? .distantPast)
+        case .releaseDate:
+            primary = compareComparable(lhs.releaseDate ?? .distantPast, rhs.releaseDate ?? .distantPast)
+        case .playCount:
+            primary = compareComparable(lhs.playCount ?? 0, rhs.playCount ?? 0)
+        case .lastPlayed:
+            primary = compareComparable(lhs.lastPlayedDate ?? .distantPast, rhs.lastPlayedDate ?? .distantPast)
+        case .duration:
+            primary = compareComparable(lhs.duration ?? 0, rhs.duration ?? 0)
+        case .bpm:
+            primary = compareComparable(analysisService.bpm(for: lhs) ?? 0, analysisService.bpm(for: rhs) ?? 0)
+        }
+
+        if primary != .orderedSame {
+            return primary
+        }
+
+        let titleTieBreak = compareText(lhs.title, rhs.title)
+        if titleTieBreak != .orderedSame {
+            return titleTieBreak
+        }
+
+        return compareText(lhs.artistName, rhs.artistName)
+    }
+
+    private func compareText(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        lhs.localizedCaseInsensitiveCompare(rhs)
+    }
+
+    private func compareComparable<T: Comparable>(_ lhs: T, _ rhs: T) -> ComparisonResult {
+        if lhs < rhs { return .orderedAscending }
+        if lhs > rhs { return .orderedDescending }
+        return .orderedSame
+    }
+
+    private func hydrationRequest(
+        sort: SongSortOption? = nil,
+        direction: SortDirection? = nil
+    ) -> HydrationRequest {
+        let resolvedSort = sort ?? sortOption
+        let resolvedDirection = direction ?? sortDirection
+
+        if resolvedSort.isAPISort {
+            return HydrationRequest(sort: resolvedSort, direction: resolvedDirection)
+        } else {
+            return HydrationRequest(sort: .title, direction: .ascending)
+        }
+    }
+
+    private func stopFullLibraryHydration() {
+        fullLibraryTask?.cancel()
+        fullLibraryTask = nil
+        fullLibraryTaskToken = nil
+        isTimelineHydrating = false
+    }
+
+    private func startFullLibraryLoadIfNeeded(force: Bool = false) {
+        guard grouping == .letter else { return }
+        guard force || !isFullLibraryLoaded else { return }
+        guard force || hasMore else {
+            isTimelineHydrating = false
+            isFullLibraryLoaded = true
+            return
+        }
+        guard fullLibraryTask == nil else { return }
+
+        let request = hydrationRequest()
+        let taskToken = UUID()
+        fullLibraryTaskToken = taskToken
+        isTimelineHydrating = hasMore
+        fullLibraryTask = Task {
+            defer {
+                Task { @MainActor in
+                    guard fullLibraryTaskToken == taskToken else { return }
+                    fullLibraryTask = nil
+                    fullLibraryTaskToken = nil
+                    isTimelineHydrating = false
+                }
+            }
+
+            if !force {
+                try? await Task.sleep(for: .milliseconds(350))
+            }
+
+            do {
+                while !Task.isCancelled {
+                    let snapshot = await MainActor.run {
+                        (
+                            hasMore: hasMore,
+                            isLoading: isLoading,
+                            offset: songs.count
+                        )
+                    }
+
+                    guard snapshot.hasMore else { break }
+
+                    if snapshot.isLoading {
+                        try? await Task.sleep(for: .milliseconds(120))
+                        continue
+                    }
+
+                    let response = try await musicService.librarySongs(
+                        limit: timelinePageSize,
+                        offset: snapshot.offset,
+                        sort: request.sort,
+                        direction: request.direction
+                    )
+                    let newSongs = Array(response.items)
+                    guard !Task.isCancelled else { return }
+
+                    await MainActor.run {
+                        songs.append(contentsOf: newSongs)
+                        hasMore = newSongs.count == timelinePageSize
+                        isFullLibraryLoaded = !hasMore
+                        isTimelineHydrating = hasMore
+                        rebuildIndexes()
+                        rebuildDisplayCache()
+                    }
+
+                    await analysisService.analyzeBatch(Array(newSongs.prefix(20)))
+                    await Task.yield()
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    isTimelineHydrating = false
+                }
+            }
+        }
+    }
+
+    private func ensureFullLibraryLoaded() async {
+        if isFullLibraryLoaded {
+            return
+        }
+
+        await MainActor.run {
+            startFullLibraryLoadIfNeeded()
+        }
+
+        let task = await MainActor.run { fullLibraryTask }
+        await task?.value
+    }
+
+    private func handleLetterSelection(_ letter: String, proxy: ScrollViewProxy) {
+        Task {
+            let alreadyAvailable = await MainActor.run { availableLetters.contains(letter) }
+            if !alreadyAvailable {
+                await ensureFullLibraryLoaded()
+            }
+
+            let canScroll = await MainActor.run { availableLetters.contains(letter) }
+            guard canScroll else { return }
+
+            await MainActor.run {
+                withAnimation(.snappy(duration: 0.2)) {
+                    proxy.scrollTo("section-\(letter)", anchor: .top)
+                }
+            }
+        }
+    }
+
+    private func playSongFromVisibleContext(_ song: Song) async {
+        guard !filteredSongs.isEmpty else {
+            try? await player.playSong(song)
+            return
+        }
+
+        if let index = filteredSongs.firstIndex(where: { $0.id == song.id }) {
+            try? await player.playSongs(filteredSongs, startingAt: index)
+        } else {
+            try? await player.playSong(song)
+        }
     }
 
     // MARK: - Data Loading
 
     private func loadSongs() async {
         do {
-            let response = try await musicService.librarySongs(sort: sortOption, direction: sortDirection)
+            let request = hydrationRequest(sort: sortOption, direction: sortDirection)
+            let response = try await musicService.librarySongs(
+                sort: request.sort,
+                direction: request.direction
+            )
             guard !Task.isCancelled else { return }
             songs = Array(response.items)
-            hasMore = response.items.count == 100
+            hasMore = response.items.count == timelinePageSize
             isLoading = false
             loadError = nil
+            isFullLibraryLoaded = !hasMore
             rebuildIndexes()
             rebuildDisplayCache()
+            startFullLibraryLoadIfNeeded()
             await analysisService.analyzeBatch(Array(songs.prefix(20)))
         } catch {
             guard !Task.isCancelled else { return }
@@ -468,17 +756,21 @@ struct LibrarySongsView: View {
     }
 
     private func reloadSongs() async {
+        stopFullLibraryHydration()
         songs = []
         isLoading = true
         hasMore = true
+        isFullLibraryLoaded = false
         await loadSongs()
     }
 
     private func loadMore() async {
-        guard hasMore, !isLoading else { return }
+        guard hasMore, !isLoading, !isFullLibraryLoaded else { return }
+        guard fullLibraryTask == nil else { return }
         isLoading = true
         do {
             let response = try await musicService.librarySongs(
+                limit: timelinePageSize,
                 offset: songs.count,
                 sort: sortOption,
                 direction: sortDirection
@@ -486,7 +778,7 @@ struct LibrarySongsView: View {
             guard !Task.isCancelled else { return }
             let newSongs = Array(response.items)
             songs.append(contentsOf: newSongs)
-            hasMore = response.items.count == 100
+            hasMore = response.items.count == timelinePageSize
             isLoading = false
             rebuildIndexes()
             rebuildDisplayCache()

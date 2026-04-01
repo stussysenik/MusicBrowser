@@ -51,6 +51,16 @@ enum MediaQueryHelper {
         ))
         return query.items?.first
     }
+
+    static func findMediaItem(persistentID: UInt64) -> MPMediaItem? {
+        let query = MPMediaQuery.songs()
+        query.addFilterPredicate(MPMediaPropertyPredicate(
+            value: NSNumber(value: persistentID),
+            forProperty: MPMediaItemPropertyPersistentID,
+            comparisonType: .equalTo
+        ))
+        return query.items?.first
+    }
 }
 
 // MARK: - Asset Reader Provider (reads from local media library file)

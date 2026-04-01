@@ -1,0 +1,24 @@
+appId: com.musicbrowser.app
+tags:
+  - notes
+---
+- launchApp:
+    clearState: true
+    arguments:
+      demo-mode: ""
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn: "Library"
+- assertVisible: "A Day in the Life"
+- tapOn:
+    id: "demo-library-song-a-day-in-the-life-the-beatles"
+- tapOn:
+    id: "demo-song-play"
+- assertVisible:
+    id: "demo-song-capture-timestamp"
+- tapOn:
+    id: "demo-song-capture-timestamp"
+- tapOn: "Notes"
+- assertVisible: "A Day in the Life"
+- assertVisible: "1 timestamps"

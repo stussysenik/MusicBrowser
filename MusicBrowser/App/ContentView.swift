@@ -14,30 +14,43 @@ struct ContentView: View {
         case library, notes, search
     }
 
+    private var miniPlayerReservationHeight: CGFloat {
+        player.currentTitle != nil ? 84 : 0
+    }
+
+    private var miniPlayerBottomPadding: CGFloat {
+        #if os(iOS)
+        58
+        #else
+        12
+        #endif
+    }
+
     var body: some View {
         if musicService.isAuthorized {
-            TabView(selection: $selectedTab) {
-                NavigationStack {
-                    LibraryView()
-                }
-                .tabItem { Label("Library", systemImage: "music.note.list") }
-                .tag(Tab.library)
+            ZStack(alignment: .bottom) {
+                TabView(selection: $selectedTab) {
+                    tabRoot {
+                        LibraryView()
+                    }
+                    .tabItem { Label("Library", systemImage: "music.note.list") }
+                    .tag(Tab.library)
 
-                NavigationStack {
-                    NotesView()
-                }
-                .tabItem { Label("Notes", systemImage: "note.text") }
-                .tag(Tab.notes)
+                    tabRoot {
+                        NotesView()
+                    }
+                    .tabItem { Label("Notes", systemImage: "note.text") }
+                    .tag(Tab.notes)
 
-                NavigationStack {
-                    SearchView()
+                    tabRoot {
+                        SearchView()
+                    }
+                    .tabItem { Label("Search", systemImage: "magnifyingglass") }
+                    .tag(Tab.search)
                 }
-                .tabItem { Label("Search", systemImage: "magnifyingglass") }
-                .tag(Tab.search)
-            }
-            .safeAreaInset(edge: .bottom) {
                 if player.currentTitle != nil {
                     MiniPlayerView(showNowPlaying: $showNowPlaying)
+                        .padding(.bottom, miniPlayerBottomPadding)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
@@ -46,10 +59,25 @@ struct ContentView: View {
                 NowPlayingView()
             }
             .onAppear {
+                if AppRuntime.current.usesDummyData {
+                    selectedTab = .library
+                }
                 analysisService.configure(with: modelContext)
             }
         } else {
             AuthorizationView()
+        }
+    }
+
+    @ViewBuilder
+    private func tabRoot<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        NavigationStack {
+            content()
+                .safeAreaInset(edge: .bottom) {
+                    if player.currentTitle != nil {
+                        Color.clear.frame(height: miniPlayerReservationHeight)
+                    }
+                }
         }
     }
 }

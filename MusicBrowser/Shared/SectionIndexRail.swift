@@ -14,7 +14,18 @@ struct SectionIndexRail: View {
     // MARK: - Public interface (unchanged from previous version)
 
     let availableLetters: Set<String>
+    let canSelectUnavailableLetters: Bool
     let onScrollTo: (String) -> Void
+
+    init(
+        availableLetters: Set<String>,
+        canSelectUnavailableLetters: Bool = false,
+        onScrollTo: @escaping (String) -> Void
+    ) {
+        self.availableLetters = availableLetters
+        self.canSelectUnavailableLetters = canSelectUnavailableLetters
+        self.onScrollTo = onScrollTo
+    }
 
     // MARK: - Private state
 
@@ -85,16 +96,19 @@ struct SectionIndexRail: View {
     private func letterLabel(_ letter: String, height: CGFloat) -> some View {
         let isActive = activeLetter == letter && isDragging
         let isAvailable = availableLetters.contains(letter)
+        let availabilityOpacity = isAvailable ? 0.78 : (canSelectUnavailableLetters ? 0.45 : 0.2)
 
         Text(letter)
             .font(.system(size: 10, weight: .semibold))
             .foregroundStyle(
                 isActive
                     ? Color.accentColor
-                    : Color(.label).opacity(isAvailable ? 0.78 : 0.2)
+                    : Color.primary.opacity(availabilityOpacity)
             )
             .scaleEffect(isActive ? 1.3 : 1.0)
             .frame(width: railWidth, height: height)
+            .accessibilityIdentifier("section-index-\(letter)")
+            .accessibilityLabel("Jump to \(letter)")
             .animation(.snappy(duration: 0.15), value: activeLetter)
     }
 
@@ -104,7 +118,7 @@ struct SectionIndexRail: View {
     private func bubbleView(for letter: String) -> some View {
         Text(letter)
             .font(.system(size: 24, weight: .bold, design: .rounded))
-            .foregroundStyle(Color(.label))
+            .foregroundStyle(.primary)
             .frame(width: 52, height: 52)
             .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
@@ -124,14 +138,14 @@ struct SectionIndexRail: View {
 
                 guard letter != activeLetter else { return }
 
-                // Only scroll to letters that actually have content.
                 let isAvailable = availableLetters.contains(letter)
+                let canSelect = isAvailable || canSelectUnavailableLetters
 
                 withAnimation(.snappy(duration: 0.15)) {
                     activeLetter = letter
                 }
 
-                if isAvailable {
+                if canSelect {
                     Haptic.selection()
                     onScrollTo(letter)
                 }

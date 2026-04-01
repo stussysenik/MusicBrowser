@@ -54,6 +54,15 @@ final class AnnotationService {
         encoder.dateEncodingStrategy = .iso8601
         return try encoder.encode(payload)
     }
+
+    func exportAllNotesJSON(in context: ModelContext) throws -> Data {
+        let songAnnotations = allAnnotations(in: context).map(ExportNoteEntry.song)
+        let albumAnnotations = allAlbumAnnotations(in: context).map(ExportNoteEntry.album)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        return try encoder.encode((songAnnotations + albumAnnotations).sorted { $0.updatedAt > $1.updatedAt })
+    }
 }
 
 private struct ExportEntry: Codable {
@@ -75,5 +84,54 @@ private struct ExportEntry: Codable {
         rating = annotation.rating
         createdAt = annotation.createdAt
         updatedAt = annotation.updatedAt
+    }
+}
+
+private struct ExportNoteEntry: Codable {
+    let kind: String
+    let itemID: String
+    let title: String
+    let artistName: String
+    let notes: String
+    let tags: [String]
+    let rating: Int
+    let noteCharacterCount: Int
+    let timestampCount: Int
+    let timestamps: [String]
+    let createdAt: Date
+    let updatedAt: Date
+
+    static func song(_ annotation: SongAnnotation) -> ExportNoteEntry {
+        ExportNoteEntry(
+            kind: "song",
+            itemID: annotation.songID,
+            title: annotation.title,
+            artistName: annotation.artistName,
+            notes: annotation.notes,
+            tags: annotation.tags,
+            rating: annotation.rating,
+            noteCharacterCount: NoteHyperData.characterCount(in: annotation.notes),
+            timestampCount: NoteHyperData.timestampCount(in: annotation.notes),
+            timestamps: NoteHyperData.timestamps(in: annotation.notes),
+            createdAt: annotation.createdAt,
+            updatedAt: annotation.updatedAt
+        )
+    }
+
+    static func album(_ annotation: AlbumAnnotation) -> ExportNoteEntry {
+        ExportNoteEntry(
+            kind: "album",
+            itemID: annotation.albumID,
+            title: annotation.title,
+            artistName: annotation.artistName,
+            notes: annotation.notes,
+            tags: annotation.tags,
+            rating: annotation.rating,
+            noteCharacterCount: NoteHyperData.characterCount(in: annotation.notes),
+            timestampCount: NoteHyperData.timestampCount(in: annotation.notes),
+            timestamps: NoteHyperData.timestamps(in: annotation.notes),
+            createdAt: annotation.createdAt,
+            updatedAt: annotation.updatedAt
+        )
     }
 }

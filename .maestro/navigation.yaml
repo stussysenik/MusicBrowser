@@ -1,0 +1,27 @@
+appId: com.musicbrowser.app
+tags:
+  - navigation
+---
+- launchApp:
+    clearState: true
+    arguments:
+      demo-mode: ""
+- tapOn:
+    text: "Allow"
+    optional: true
+
+# Start on Library tab
+- tapOn: "Library"
+- assertVisible: "Library"
+
+# Switch to Notes tab
+- tapOn: "Notes"
+- assertVisible: "Notes"
+
+# Switch to Search tab
+- tapOn: "Search"
+- assertVisible: "Search"
+
+# Switch back to Library tab
+- tapOn: "Library"
+- assertVisible: "Library"

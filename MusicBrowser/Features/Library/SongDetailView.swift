@@ -28,10 +28,13 @@ struct SongDetailView: View {
                 actionButtons
                 if isCurrentSong {
                     progressBar
+                    listeningActions
                     playbackControls
                 }
                 metadataGrid
-                annotationSection
+                if annotation != nil {
+                    annotationSection
+                }
             }
             .padding()
         }
@@ -42,12 +45,17 @@ struct SongDetailView: View {
         .onAppear {
             loadOrCreateAnnotation()
         }
+        .onDisappear {
+            saveTask?.cancel()
+            if annotation != nil { try? modelContext.save() }
+        }
     }
 
     // MARK: - Artwork
 
     private var artworkSection: some View {
         ArtworkView(artwork: song.artwork, size: 280)
+            .frame(maxWidth: 320)
             .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
     }
 
@@ -166,6 +174,19 @@ struct SongDetailView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary)
+    }
+
+    private var listeningActions: some View {
+        HStack {
+            Button {
+                captureTimestamp()
+            } label: {
+                Label("Capture Timestamp", systemImage: "waveform.badge.plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
     }
 
     // MARK: - Metadata Grid
@@ -298,9 +319,19 @@ struct SongDetailView: View {
 
             // Notes
             VStack(alignment: .leading, spacing: 4) {
-                Text("Notes")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text("Notes")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if isCurrentSong {
+                        Button("Capture Timestamp") {
+                            captureTimestamp()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                }
                 TextEditor(text: Binding(
                     get: { annotation?.notes ?? "" },
                     set: { newValue in
@@ -347,6 +378,16 @@ struct SongDetailView: View {
             annotationService.saveAnnotation(annotation, in: modelContext)
             showSaveConfirmation.toggle()
         }
+    }
+
+    private func captureTimestamp() {
+        let token = "[\(formatDurationLong(player.playbackTime))] "
+        if annotation?.notes.isEmpty == false {
+            annotation?.notes += "\n\(token)"
+        } else {
+            annotation?.notes = token
+        }
+        debouncedSave()
     }
 
 }

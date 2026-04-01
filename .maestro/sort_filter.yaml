@@ -1,0 +1,30 @@
+appId: com.musicbrowser.app
+tags:
+  - library
+  - sort
+---
+- launchApp:
+    clearState: true
+    arguments:
+      demo-mode: ""
+- tapOn:
+    text: "Allow"
+    optional: true
+- tapOn: "Library"
+- assertVisible: "Library"
+- assertVisible: "A Day in the Life"
+
+# Open the View Options menu
+- tapOn:
+    id: "demo-library-view-options"
+
+# Verify the native menu exposed the expected controls
+- assertVisible: "Title"
+- assertVisible: "Ascending"
+- assertVisible: "Letter"
+- tapOn: "Artist"
+- assertVisible: "A Day in the Life"
+- tapOn:
+    id: "demo-library-view-options"
+- tapOn: "Year"
+- assertVisible: "1967"
